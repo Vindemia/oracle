@@ -19,6 +19,13 @@ export default [
     },
   },
   {
+    files: ['src/**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+    },
+  },
+  {
     ignores: ['dist/**', 'node_modules/**', 'prisma/generated/**'],
   },
 ];
