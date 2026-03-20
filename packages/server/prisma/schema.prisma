@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  displayName   String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  tasks         Task[]
+  tags          Tag[]
+  refreshTokens RefreshToken[]
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  title       String
+  urgent      Boolean    @default(false)
+  important   Boolean    @default(false)
+  quadrant    Quadrant
+  status      TaskStatus @default(ACTIVE)
+  notes       String?
+  plannedFor  DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  completedAt DateTime?
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags        TaskTag[]
+
+  @@index([userId, status])
+  @@index([userId, quadrant])
+}
+
+model Tag {
+  id        String    @id @default(uuid())
+  name      String
+  icon      String
+  color     String
+  isDefault Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks     TaskTag[]
+
+  @@unique([userId, name])
+}
+
+model TaskTag {
+  taskId String
+  tagId  String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+enum Quadrant {
+  FIRE
+  STARS
+  WIND
+  MIST
+}
+
+enum TaskStatus {
+  ACTIVE
+  DONE
+  ELIMINATED
+}
