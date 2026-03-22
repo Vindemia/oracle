@@ -4,10 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute.js';
 import { AppShell } from './components/AppShell.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { RegisterPage } from './pages/RegisterPage.js';
-
-function MatrixPlaceholder() {
-  return <div style={{ color: 'var(--text-primary)', padding: '1.5rem' }}>Matrice — à venir</div>;
-}
+import { MatrixView } from './views/MatrixView.js';
 
 export default function App() {
   return (
@@ -21,7 +18,7 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <AppShell>
-                  <MatrixPlaceholder />
+                  <MatrixView />
                 </AppShell>
               </ProtectedRoute>
             }
