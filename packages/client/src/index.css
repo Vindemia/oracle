@@ -1,1 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
+
+:root {
+  /* Backgrounds */
+  --bg-primary: #0d0b1a;
+  --bg-secondary: #13102a;
+  --bg-tertiary: #1c1838;
+  --bg-surface: #221e3d;
+  --bg-overlay: rgba(13, 11, 26, 0.85);
+
+  /* Text */
+  --text-primary: #e8e4f8;
+  --text-secondary: #a89dc8;
+  --text-muted: #6b5f8a;
+
+  /* Borders */
+  --border-color: #2e2855;
+  --border-subtle: #1f1c3a;
+
+  /* Accent — or mystique */
+  --accent-gold: #c9a84c;
+  --accent-gold-light: #f0d080;
+  --accent-purple: #8b5cf6;
+  --accent-purple-light: #a78bfa;
+
+  /* Quadrant : FIRE — urgent + important */
+  --quadrant-fire: #ef4444;
+  --quadrant-fire-bg: #2d1212;
+  --quadrant-fire-border: #7f1d1d;
+
+  /* Quadrant : STARS — important, non urgent */
+  --quadrant-stars: #8b5cf6;
+  --quadrant-stars-bg: #1e1230;
+  --quadrant-stars-border: #4c1d95;
+
+  /* Quadrant : WIND — urgent, non important */
+  --quadrant-wind: #38bdf8;
+  --quadrant-wind-bg: #0c1e2e;
+  --quadrant-wind-border: #0c4a6e;
+
+  /* Quadrant : MIST — ni urgent ni important */
+  --quadrant-mist: #94a3b8;
+  --quadrant-mist-bg: #151c24;
+  --quadrant-mist-border: #1e293b;
+
+  /* Status */
+  --status-done: #4ade80;
+  --status-eliminated: #f87171;
+
+  /* Fonts */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Nunito', system-ui, sans-serif;
+
+  /* Spacing / radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(139, 92, 246, 0.25);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
