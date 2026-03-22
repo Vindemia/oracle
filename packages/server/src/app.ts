@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRouter from './auth/auth.router.js';
+import tasksRouter from './tasks/tasks.router.js';
 
 const app = express();
 
@@ -14,5 +15,6 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/tasks', tasksRouter);
 
 export default app;
