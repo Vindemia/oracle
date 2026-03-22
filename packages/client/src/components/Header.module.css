@@ -23,7 +23,13 @@
   letter-spacing: 0.05em;
 }
 
-.historyBtn {
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.iconBtn {
   background: none;
   border: none;
   font-size: 1.25rem;
@@ -34,6 +40,6 @@
   line-height: 1;
 }
 
-.historyBtn:hover {
+.iconBtn:hover {
   background-color: var(--bg-tertiary);
 }

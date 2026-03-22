@@ -1,6 +1,7 @@
 import { type KeyboardEvent, useRef, useState } from 'react';
 import { api } from '../api/client.js';
 import { useTags } from '../hooks/useTags.js';
+import { TagSelector } from './TagSelector.js';
 import type { Task } from '../types/index.js';
 import styles from './TaskInput.module.css';
 
@@ -10,7 +11,7 @@ interface TaskInputProps {
 }
 
 export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) {
-  const tags = useTags();
+  const { tags } = useTags();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState('');
@@ -64,12 +65,6 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
     if (title.trim()) setPanelOpen(true);
   };
 
-  const toggleTag = (id: string) => {
-    setSelectedTagIds((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
-    );
-  };
-
   return (
     <div className={isDesktop ? styles.desktopWrapper : styles.mobileWrapper}>
       {/* Panel options */}
@@ -92,20 +87,11 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
             </button>
           </div>
 
-          {tags.length > 0 && (
-            <div className={styles.tagRow}>
-              {tags.map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  className={[styles.tagChip, selectedTagIds.includes(tag.id) ? styles.tagChipActive : undefined].filter(Boolean).join(' ')}
-                  onClick={() => { toggleTag(tag.id); }}
-                >
-                  {tag.name}
-                </button>
-              ))}
-            </div>
-          )}
+          <TagSelector
+            tags={tags}
+            selectedIds={selectedTagIds}
+            onChange={setSelectedTagIds}
+          />
 
           <button
             type="button"

@@ -13,9 +13,11 @@ export interface User {
 export interface Tag {
   id: string;
   name: string;
+  icon: string;
+  color: string;
+  isDefault: boolean;
   userId: string;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface Task {

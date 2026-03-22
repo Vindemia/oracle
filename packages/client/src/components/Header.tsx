@@ -7,14 +7,24 @@ export function Header() {
   return (
     <header className={styles.header}>
       <h1 className={styles.title}>✦ Oracle</h1>
-      <button
-        className={styles.historyBtn}
-        onClick={() => { void navigate('/history'); }}
-        aria-label="Prophéties Accomplies"
-        title="Prophéties Accomplies"
-      >
-        📜
-      </button>
+      <div className={styles.actions}>
+        <button
+          className={styles.iconBtn}
+          onClick={() => { void navigate('/history'); }}
+          aria-label="Prophéties Accomplies"
+          title="Prophéties Accomplies"
+        >
+          📜
+        </button>
+        <button
+          className={styles.iconBtn}
+          onClick={() => { void navigate('/settings'); }}
+          aria-label="Réglages"
+          title="Réglages"
+        >
+          ⚙
+        </button>
+      </div>
     </header>
   );
 }
