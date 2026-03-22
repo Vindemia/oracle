@@ -31,4 +31,5 @@ export interface Task {
   tags: Tag[];
   createdAt: string;
   updatedAt: string;
+  completedAt: string | null;
 }
