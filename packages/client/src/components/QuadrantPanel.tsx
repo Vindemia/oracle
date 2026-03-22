@@ -6,9 +6,13 @@ import styles from './QuadrantPanel.module.css';
 interface QuadrantPanelProps {
   quadrant: Quadrant;
   tasks: Task[];
+  onComplete: (id: string) => Promise<void>;
+  onEliminate: (id: string) => Promise<void>;
+  onUpdate: (id: string, data: Partial<Pick<Task, 'urgent' | 'important'>>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }
 
-export function QuadrantPanel({ quadrant, tasks }: QuadrantPanelProps) {
+export function QuadrantPanel({ quadrant, tasks, onComplete, onEliminate, onUpdate, onDelete }: QuadrantPanelProps) {
   const meta = getQuadrantMeta(quadrant);
 
   return (
@@ -36,7 +40,16 @@ export function QuadrantPanel({ quadrant, tasks }: QuadrantPanelProps) {
         {tasks.length === 0 ? (
           <p className={styles.empty}>Aucune vision ici</p>
         ) : (
-          tasks.map((task) => <TaskCard key={task.id} task={task} />)
+          tasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onComplete={onComplete}
+              onEliminate={onEliminate}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+            />
+          ))
         )}
       </div>
     </div>
