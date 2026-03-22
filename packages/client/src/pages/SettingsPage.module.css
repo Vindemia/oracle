@@ -1,0 +1,224 @@
+.page {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1.25rem;
+  background-color: var(--bg-overlay);
+  border-bottom: 1px solid var(--border-subtle);
+  backdrop-filter: blur(8px);
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: color 200ms ease-out, background-color 200ms ease-out;
+  font-family: var(--font-body);
+}
+
+.backBtn:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--accent-gold-light);
+  margin: 0;
+}
+
+.content {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.tagList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tagItem {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.625rem 0.875rem;
+}
+
+.tagRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tagActions {
+  margin-left: auto;
+  display: flex;
+  gap: 0.375rem;
+}
+
+.defaultLabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background-color: var(--bg-tertiary);
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+}
+
+.editRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.createForm {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.createTitle {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.createRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.input {
+  flex: 1;
+  min-width: 6rem;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  padding: 0.375rem 0.625rem;
+  outline: none;
+  transition: border-color 200ms ease-out;
+}
+
+.input:focus {
+  border-color: var(--accent-purple);
+}
+
+.colorInput {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.btn {
+  padding: 0.375rem 0.875rem;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-light));
+  color: #0d0b1a;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.875rem;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: opacity 200ms ease-out;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btnGhost {
+  padding: 0.375rem 0.625rem;
+  background: none;
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: color 200ms ease-out, background-color 200ms ease-out;
+  font-family: var(--font-body);
+}
+
+.btnGhost:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.btnDanger {
+  padding: 0.375rem 0.625rem;
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--status-eliminated);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-family: var(--font-body);
+  transition: background-color 200ms ease-out;
+}
+
+.btnDanger:hover {
+  background-color: rgba(239, 68, 68, 0.25);
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.error {
+  color: var(--status-eliminated);
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  background-color: rgba(248, 113, 113, 0.08);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--status-eliminated);
+}

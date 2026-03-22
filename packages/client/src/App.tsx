@@ -7,6 +7,7 @@ import { ToastList } from './components/ToastList.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { RegisterPage } from './pages/RegisterPage.js';
 import { MatrixView } from './views/MatrixView.js';
+import { SettingsPage } from './pages/SettingsPage.js';
 import { useTasks } from './hooks/useTasks.js';
 
 function MatrixRoute() {
@@ -52,6 +53,14 @@ export default function App() {
                       Prophéties Accomplies — à venir
                     </div>
                   </AppShell>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
                 </ProtectedRoute>
               }
             />

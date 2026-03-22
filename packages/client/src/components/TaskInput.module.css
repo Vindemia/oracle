@@ -137,28 +137,6 @@
   box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
 }
 
-.tagRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-}
-
-.tagChip {
-  padding: 0.25rem 0.625rem;
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: 9999px;
-  color: var(--text-muted);
-  font-size: 0.8125rem;
-  cursor: pointer;
-  transition: background-color 200ms ease-out, border-color 200ms ease-out, color 200ms ease-out;
-}
-
-.tagChipActive {
-  background-color: rgba(201, 168, 76, 0.12);
-  border-color: var(--accent-gold);
-  color: var(--accent-gold-light);
-}
 
 .revealBtn {
   align-self: flex-end;
