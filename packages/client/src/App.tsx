@@ -8,6 +8,7 @@ import { LoginPage } from './pages/LoginPage.js';
 import { RegisterPage } from './pages/RegisterPage.js';
 import { MatrixView } from './views/MatrixView.js';
 import { SettingsPage } from './pages/SettingsPage.js';
+import { HistoryView } from './views/HistoryView.js';
 import { useTasks } from './hooks/useTasks.js';
 
 function focusTaskInput() {
@@ -53,11 +54,7 @@ export default function App() {
               path="/history"
               element={
                 <ProtectedRoute>
-                  <AppShell>
-                    <div style={{ color: 'var(--text-primary)', padding: '1.5rem' }}>
-                      Prophéties Accomplies — à venir
-                    </div>
-                  </AppShell>
+                  <HistoryView />
                 </ProtectedRoute>
               }
             />
