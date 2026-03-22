@@ -18,6 +18,17 @@
   padding: 0 1.5rem 2rem;
 }
 
+/* ── Erreur de soumission ────────────────────────────────── */
+
+.errorBanner {
+  padding: 0.5rem 1rem;
+  background-color: rgba(248, 113, 113, 0.12);
+  border-top: 1px solid rgba(248, 113, 113, 0.3);
+  color: var(--status-eliminated);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
 /* ── Barre de saisie ──────────────────────────────────────── */
 
 .inputRow {

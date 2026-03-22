@@ -30,8 +30,10 @@ export function MatrixView({ tasks, isLoading, error, onComplete, onEliminate, o
 
   if (isLoading) {
     return (
-      <div className={styles.feedback}>
-        <span>Consultation des astres…</span>
+      <div className={styles.grid}>
+        {QUADRANT_ORDER.map((q) => (
+          <div key={q} className={styles.skeleton} aria-hidden="true" />
+        ))}
       </div>
     );
   }
