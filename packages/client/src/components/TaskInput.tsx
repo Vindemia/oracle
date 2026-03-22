@@ -20,6 +20,7 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
   const [important, setImportant] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const reset = () => {
     setTitle('');
@@ -33,6 +34,7 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
   const createTask = async (u: boolean, i: boolean, tIds: string[]) => {
     if (!title.trim() || isSubmitting) return;
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       await api.post<Task>('/tasks', {
         title: title.trim(),
@@ -42,6 +44,8 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
       });
       onTaskCreated();
       reset();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Une erreur est survenue, réessaie');
     } finally {
       setIsSubmitting(false);
     }
@@ -101,6 +105,13 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
           >
             {isSubmitting ? 'Révélation…' : '✦ Révéler'}
           </button>
+        </div>
+      )}
+
+      {/* Erreur de soumission */}
+      {submitError !== null && (
+        <div className={styles.errorBanner} role="alert">
+          {submitError}
         </div>
       )}
 
