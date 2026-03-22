@@ -60,6 +60,16 @@
   gap: 0.5rem;
 }
 
+/* Animation d'apparition pour une nouvelle carte */
+.taskList > * {
+  animation: cardIn 300ms ease-out;
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .empty {
   color: var(--text-muted);
   font-size: 0.8125rem;
