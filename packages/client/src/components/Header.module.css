@@ -30,7 +30,7 @@
   cursor: pointer;
   padding: 0.25rem 0.5rem;
   border-radius: var(--radius-sm);
-  transition: background-color 0.15s;
+  transition: background-color 200ms ease-out;
   line-height: 1;
 }
 
