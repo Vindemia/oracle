@@ -8,10 +8,18 @@ import { MatrixView } from './views/MatrixView.js';
 import { useTasks } from './hooks/useTasks.js';
 
 function MatrixRoute() {
-  const { tasks, isLoading, error, refresh } = useTasks();
+  const { tasks, isLoading, error, refresh, completeTask, eliminateTask, updateTask, deleteTask } = useTasks();
   return (
     <AppShell onTaskCreated={refresh}>
-      <MatrixView tasks={tasks} isLoading={isLoading} error={error} />
+      <MatrixView
+        tasks={tasks}
+        isLoading={isLoading}
+        error={error}
+        onComplete={completeTask}
+        onEliminate={eliminateTask}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+      />
     </AppShell>
   );
 }
