@@ -109,6 +109,7 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
         <input
           ref={inputRef}
           type="text"
+          data-task-input="true"
           className={styles.input}
           placeholder="Nouvelle vision..."
           value={title}
