@@ -39,12 +39,9 @@ function buildHeaders(): HeadersInit {
 }
 
 async function fetchWithAuth(method: Method, path: string, body?: unknown): Promise<Response> {
-  return fetch(BASE_URL + path, {
-    method,
-    headers: buildHeaders(),
-    credentials: 'include',
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  const init: RequestInit = { method, headers: buildHeaders(), credentials: 'include' };
+  if (body !== undefined) init.body = JSON.stringify(body);
+  return fetch(BASE_URL + path, init);
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
@@ -52,8 +49,8 @@ async function parseResponse<T>(response: Response): Promise<T> {
     const text = await response.text();
     let message = `Erreur ${response.status.toString()}`;
     try {
-      const json = JSON.parse(text) as { message?: string };
-      if (json.message) message = json.message;
+      const json = JSON.parse(text) as { message?: string; error?: string };
+      message = json.message ?? json.error ?? message;
     } catch {
       // réponse non-JSON
     }
