@@ -1,0 +1,42 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 0.75rem;
+  padding: 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+  /* Hauteur : plein écran moins header (4rem) et BottomBar mobile (5rem) */
+  min-height: calc(100vh - 9rem);
+}
+
+/* Sur mobile : les quadrants ont une hauteur minimale fixe */
+.grid > * {
+  min-height: 180px;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    /* Sur desktop, on retire le padding bottom de la BottomBar mobile */
+    min-height: calc(100vh - 5rem);
+    gap: 1rem;
+    padding: 1.25rem 1.5rem 0;
+  }
+
+  .grid > * {
+    min-height: 240px;
+  }
+}
+
+.feedback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+}
+
+.error {
+  color: var(--status-eliminated);
+}
