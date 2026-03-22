@@ -1,5 +1,5 @@
 .shell {
-  min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--bg-primary);
   background-image:
     radial-gradient(ellipse at 15% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 55%),
@@ -40,18 +40,20 @@
   z-index: 1;
   padding-top: 4rem; /* hauteur du header fixe */
   padding-bottom: 5rem; /* hauteur de la BottomBar fixe (mobile) */
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* Sur desktop ≥768px : la barre d'ajout mobile est masquée */
 .mobileBar {
   display: block;
+  /* Reste visible au-dessus du clavier virtuel grâce à dvh */
 }
 
 .desktopBar {
   display: none;
 }
 
+/* Tablette (768px–1023px) : layout desktop mais marges réduites */
 @media (min-width: 768px) {
   .mobileBar {
     display: none;
@@ -61,10 +63,22 @@
     display: block;
     max-width: 900px;
     margin: 0 auto;
-    padding: 0 1.5rem 2rem;
+    padding: 0 1rem 2rem;
   }
 
   .main {
     padding-bottom: 1rem;
+  }
+}
+
+/* Desktop (≥1024px) : marges plus généreuses, layout centré */
+@media (min-width: 1024px) {
+  .desktopBar {
+    padding: 0 1.5rem 2rem;
+  }
+
+  .main {
+    max-width: 1200px;
+    margin: 0 auto;
   }
 }

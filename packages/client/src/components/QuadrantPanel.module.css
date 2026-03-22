@@ -5,6 +5,8 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
   min-height: 0;
+  /* Hauteur minimale pour toujours être visible même vide */
+  min-height: 160px;
 }
 
 .header {
