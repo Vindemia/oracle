@@ -10,6 +10,10 @@ import { MatrixView } from './views/MatrixView.js';
 import { SettingsPage } from './pages/SettingsPage.js';
 import { useTasks } from './hooks/useTasks.js';
 
+function focusTaskInput() {
+  document.querySelector<HTMLInputElement>('[data-task-input]')?.focus();
+}
+
 function MatrixRoute() {
   const { tasks, isLoading, error, refresh, completeTask, eliminateTask, updateTask, deleteTask } = useTasks();
   return (
@@ -22,6 +26,7 @@ function MatrixRoute() {
         onEliminate={eliminateTask}
         onUpdate={updateTask}
         onDelete={deleteTask}
+        onFocusInput={focusTaskInput}
       />
     </AppShell>
   );
