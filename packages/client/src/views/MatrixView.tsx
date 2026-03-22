@@ -1,14 +1,17 @@
 import { useMemo } from 'react';
-import { useTasks } from '../hooks/useTasks.js';
 import { QuadrantPanel } from '../components/QuadrantPanel.js';
 import type { Quadrant, Task } from '../types/index.js';
 import styles from './MatrixView.module.css';
 
 const QUADRANT_ORDER: Quadrant[] = ['FIRE', 'STARS', 'WIND', 'MIST'];
 
-export function MatrixView() {
-  const { tasks, isLoading, error } = useTasks();
+interface MatrixViewProps {
+  tasks: Task[];
+  isLoading: boolean;
+  error: string | null;
+}
 
+export function MatrixView({ tasks, isLoading, error }: MatrixViewProps) {
   const tasksByQuadrant = useMemo(() => {
     const map: Record<Quadrant, Task[]> = { FIRE: [], STARS: [], WIND: [], MIST: [] };
     for (const task of tasks) {
