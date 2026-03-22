@@ -5,6 +5,16 @@ import { AppShell } from './components/AppShell.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { RegisterPage } from './pages/RegisterPage.js';
 import { MatrixView } from './views/MatrixView.js';
+import { useTasks } from './hooks/useTasks.js';
+
+function MatrixRoute() {
+  const { tasks, isLoading, error, refresh } = useTasks();
+  return (
+    <AppShell onTaskCreated={refresh}>
+      <MatrixView tasks={tasks} isLoading={isLoading} error={error} />
+    </AppShell>
+  );
+}
 
 export default function App() {
   return (
@@ -17,9 +27,7 @@ export default function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <AppShell>
-                  <MatrixView />
-                </AppShell>
+                <MatrixRoute />
               </ProtectedRoute>
             }
           />
