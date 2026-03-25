@@ -18,6 +18,27 @@ export interface AuthContextValue {
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Singleton : évite deux appels simultanés à /auth/refresh (React StrictMode en dev
+// monte les effets deux fois, ce qui causerait une double rotation du refresh token).
+let pendingRefresh: Promise<{ accessToken: string; user?: User } | null> | null = null;
+
+function fetchRefresh(): Promise<{ accessToken: string; user?: User } | null> {
+  if (pendingRefresh) return pendingRefresh;
+  pendingRefresh = fetch(
+    (import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/auth/refresh',
+    { method: 'POST', credentials: 'include' },
+  )
+    .then(async (res) => {
+      if (!res.ok) return null;
+      return res.json() as Promise<{ accessToken: string; user?: User }>;
+    })
+    .catch(() => null)
+    .finally(() => {
+      pendingRefresh = null;
+    });
+  return pendingRefresh;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,20 +47,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        const response = await fetch(
-          (import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/auth/refresh',
-          { method: 'POST', credentials: 'include' },
-        );
-        if (response.ok) {
-          const data = (await response.json()) as { accessToken: string; user?: User };
+        const data = await fetchRefresh();
+        if (data) {
           setAccessToken(data.accessToken);
-          // Récupérer le user si non retourné par refresh
-          if (data.user) {
-            setUser(data.user);
-          } else {
-            const me = await api.get<User>('/auth/me');
-            setUser(me);
-          }
+          const resolvedUser = data.user ?? await api.get<User>('/auth/me');
+          setUser(resolvedUser);
         }
       } catch {
         // Pas de session active, on reste non authentifié

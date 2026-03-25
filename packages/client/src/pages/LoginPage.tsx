@@ -1,18 +1,20 @@
 import { type SyntheticEvent, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import styles from './AuthPage.module.css';
 
 export function LoginPage() {
   const { isAuthenticated, login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from ?? '/';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={from} replace />;
   }
 
   const handleSubmit = async (e: SyntheticEvent) => {
@@ -21,7 +23,7 @@ export function LoginPage() {
     setIsLoading(true);
     try {
       await login(email, password);
-      void navigate('/');
+      void navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
     } finally {
