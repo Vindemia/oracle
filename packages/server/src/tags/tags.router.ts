@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import prisma from '../lib/prisma.js';
 import { authMiddleware } from '../auth/auth.middleware.js';
+import { DEFAULT_TAGS, seedUserTags } from '../lib/tags.js';
 
 const router = Router();
 
@@ -21,10 +22,27 @@ const updateSchema = z.object({
   color: z.string().regex(colorRegex).optional(),
 });
 
+router.get('/defaults', (_req, res) => {
+  res.json(DEFAULT_TAGS);
+});
+
+router.post('/restore-defaults', async (req, res) => {
+  try {
+    await seedUserTags(prisma, req.userId);
+    const tags = await prisma.tag.findMany({
+      where: { userId: req.userId, deletedAt: null },
+      orderBy: { createdAt: 'asc' },
+    });
+    res.json(tags);
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     const tags = await prisma.tag.findMany({
-      where: { userId: req.userId },
+      where: { userId: req.userId, deletedAt: null },
       orderBy: { createdAt: 'asc' },
     });
     res.json(tags);
@@ -103,12 +121,22 @@ router.patch('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const existing = await prisma.tag.findUnique({ where: { id: req.params['id'] } });
-    if (!existing || existing.userId !== req.userId) {
+    if (!existing || existing.userId !== req.userId || existing.deletedAt !== null) {
       res.status(404).json({ error: 'Tag not found' });
       return;
     }
 
-    await prisma.tag.delete({ where: { id: req.params['id'] } });
+    // Supprime les associations sur les tâches actives uniquement
+    await prisma.taskTag.deleteMany({
+      where: { tagId: existing.id, task: { status: 'ACTIVE' } },
+    });
+
+    // Soft-delete : conserve les associations des visions accomplies/éliminées
+    await prisma.tag.update({
+      where: { id: existing.id },
+      data: { deletedAt: new Date() },
+    });
+
     res.status(204).send();
   } catch {
     res.status(500).json({ error: 'Internal server error' });

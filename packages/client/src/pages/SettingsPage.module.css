@@ -105,6 +105,12 @@
   gap: 0.5rem;
 }
 
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .createForm {
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);

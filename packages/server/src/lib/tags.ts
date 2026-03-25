@@ -9,12 +9,12 @@ export const DEFAULT_TAGS = [
 ];
 
 export async function seedUserTags(prisma: PrismaClient, userId: string) {
-  await prisma.tag.createMany({
-    data: DEFAULT_TAGS.map((tag) => ({
-      ...tag,
-      isDefault: true,
-      userId,
-    })),
-    skipDuplicates: true,
-  });
+  for (const tag of DEFAULT_TAGS) {
+    await prisma.tag.upsert({
+      where: { userId_name: { userId, name: tag.name } },
+      // Si le tag existe mais a été soft-deleté, on le restaure sans écraser les persos
+      update: { deletedAt: null },
+      create: { ...tag, isDefault: true, userId },
+    });
+  }
 }

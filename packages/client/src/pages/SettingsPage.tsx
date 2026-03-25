@@ -2,24 +2,38 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTags } from '../hooks/useTags.js';
 import { TagBadge } from '../components/TagBadge.js';
+import { IconPicker } from '../components/IconPicker.js';
 import styles from './SettingsPage.module.css';
 
 const DEFAULT_COLORS = ['#8b5cf6', '#ef4444', '#38bdf8', '#4ade80', '#f59e0b', '#ec4899', '#6366f1'];
 
 export function SettingsPage() {
   const navigate = useNavigate();
-  const { tags, isLoading, createTag, updateTag, deleteTag } = useTags();
+  const { tags, isLoading, createTag, updateTag, deleteTag, restoreDefaults } = useTags();
 
   const [newName, setNewName] = useState('');
   const [newIcon, setNewIcon] = useState('✦');
   const [newColor, setNewColor] = useState(DEFAULT_COLORS[0] ?? '#8b5cf6');
   const [isCreating, setIsCreating] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editIcon, setEditIcon] = useState('');
   const [editColor, setEditColor] = useState('');
+
+  const handleRestoreDefaults = async () => {
+    setIsRestoring(true);
+    setError(null);
+    try {
+      await restoreDefaults();
+    } catch {
+      setError('Erreur lors de la restauration des tags par défaut');
+    } finally {
+      setIsRestoring(false);
+    }
+  };
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
@@ -77,7 +91,17 @@ export function SettingsPage() {
 
       <main className={styles.content}>
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Tags</h2>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Tags</h2>
+            <button
+              type="button"
+              className={styles.btnGhost}
+              disabled={isRestoring}
+              onClick={() => { void handleRestoreDefaults(); }}
+            >
+              {isRestoring ? '…' : '↺ Restaurer les tags par défaut'}
+            </button>
+          </div>
 
           {isLoading ? (
             <p className={styles.muted}>Chargement…</p>
@@ -87,13 +111,7 @@ export function SettingsPage() {
                 <li key={tag.id} className={styles.tagItem}>
                   {editingId === tag.id ? (
                     <div className={styles.editRow}>
-                      <input
-                        className={styles.input}
-                        value={editIcon}
-                        onChange={(e) => { setEditIcon(e.target.value); }}
-                        placeholder="Icône"
-                        style={{ width: '3rem', textAlign: 'center' }}
-                      />
+                      <IconPicker value={editIcon} onChange={setEditIcon} />
                       <input
                         className={styles.input}
                         value={editName}
@@ -161,13 +179,7 @@ export function SettingsPage() {
           <div className={styles.createForm}>
             <h3 className={styles.createTitle}>Ajouter un tag</h3>
             <div className={styles.createRow}>
-              <input
-                className={styles.input}
-                value={newIcon}
-                onChange={(e) => { setNewIcon(e.target.value); }}
-                placeholder="Icône"
-                style={{ width: '3rem', textAlign: 'center' }}
-              />
+              <IconPicker value={newIcon} onChange={setNewIcon} />
               <input
                 className={styles.input}
                 value={newName}
