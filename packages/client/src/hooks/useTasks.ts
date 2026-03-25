@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client.js';
-import type { Task } from '../types/index.js';
+import type { Tag, Task } from '../types/index.js';
 
 interface UseTasksResult {
   tasks: Task[];
@@ -10,6 +10,7 @@ interface UseTasksResult {
   completeTask: (id: string) => Promise<void>;
   eliminateTask: (id: string) => Promise<void>;
   updateTask: (id: string, data: Partial<Pick<Task, 'urgent' | 'important' | 'title'>>) => Promise<void>;
+  updateTaskTags: (id: string, newTags: Tag[]) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
 }
 
@@ -84,6 +85,17 @@ export function useTasks(): UseTasksResult {
     }
   }, [tasks]);
 
+  const updateTaskTags = useCallback(async (id: string, newTags: Tag[]) => {
+    const prev = tasks;
+    setTasks((t) => t.map((task) => task.id !== id ? task : { ...task, tags: newTags }));
+    try {
+      await api.patch<Task>('/tasks/' + id, { tagIds: newTags.map((t) => t.id) });
+    } catch (err) {
+      setTasks(prev);
+      throw err;
+    }
+  }, [tasks]);
+
   const deleteTask = useCallback(async (id: string) => {
     const prev = tasks;
     setTasks((t) => t.filter((task) => task.id !== id));
@@ -95,5 +107,5 @@ export function useTasks(): UseTasksResult {
     }
   }, [tasks]);
 
-  return { tasks, isLoading, error, refresh: fetchTasks, completeTask, eliminateTask, updateTask, deleteTask };
+  return { tasks, isLoading, error, refresh: fetchTasks, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask };
 }

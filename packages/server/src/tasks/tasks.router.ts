@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import prisma from '../lib/prisma.js';
 import { authMiddleware } from '../auth/auth.middleware.js';
-import type { Quadrant } from '@prisma/client';
+import type { Prisma, Quadrant } from '@prisma/client';
 
 const router = Router();
 
@@ -11,6 +11,12 @@ router.use(authMiddleware);
 const taskInclude = {
   tags: { include: { tag: true } },
 } as const;
+
+type TaskResult = Prisma.TaskGetPayload<{ include: typeof taskInclude }>;
+
+function serialize(task: TaskResult) {
+  return { ...task, tags: task.tags.map((tt) => tt.tag) };
+}
 
 function calcQuadrant(urgent: boolean, important: boolean): Quadrant {
   if (urgent && important) return 'FIRE';
@@ -60,7 +66,7 @@ router.get('/', async (req, res) => {
       include: taskInclude,
       orderBy: { createdAt: 'desc' },
     });
-    res.json(tasks);
+    res.json(tasks.map(serialize));
   } catch {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -90,7 +96,7 @@ router.post('/', async (req, res) => {
       },
       include: taskInclude,
     });
-    res.status(201).json(task);
+    res.status(201).json(serialize(task));
   } catch {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -133,7 +139,7 @@ router.patch('/:id', async (req, res) => {
       },
       include: taskInclude,
     });
-    res.json(task);
+    res.json(serialize(task));
   } catch {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -167,7 +173,7 @@ router.post('/:id/complete', async (req, res) => {
       data: { status: 'DONE', completedAt: new Date() },
       include: taskInclude,
     });
-    res.json(task);
+    res.json(serialize(task));
   } catch {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -186,7 +192,7 @@ router.post('/:id/eliminate', async (req, res) => {
       data: { status: 'ELIMINATED', completedAt: new Date() },
       include: taskInclude,
     });
-    res.json(task);
+    res.json(serialize(task));
   } catch {
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -205,7 +211,7 @@ router.post('/:id/reactivate', async (req, res) => {
       data: { status: 'ACTIVE', completedAt: null },
       include: taskInclude,
     });
-    res.json(task);
+    res.json(serialize(task));
   } catch {
     res.status(500).json({ error: 'Internal server error' });
   }
