@@ -15,7 +15,7 @@
   flex-direction: column;
   max-width: 900px;
   margin: 0 auto;
-  padding: 0 1.5rem 2rem;
+  padding: 0 1.5rem 0.5rem;
 }
 
 /* ── Erreur de soumission ────────────────────────────────── */

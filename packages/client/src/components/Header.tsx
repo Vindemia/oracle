@@ -1,8 +1,10 @@
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import styles from './Header.module.css';
 
 export function Header() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   return (
     <header className={styles.header}>
@@ -23,6 +25,14 @@ export function Header() {
           title="Réglages"
         >
           ⚙
+        </button>
+        <button
+          className={styles.iconBtn}
+          onClick={() => { void logout(); }}
+          aria-label="Se déconnecter"
+          title="Se déconnecter"
+        >
+          ⏻
         </button>
       </div>
     </header>

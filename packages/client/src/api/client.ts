@@ -15,7 +15,7 @@ type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 async function request<T>(method: Method, path: string, body?: unknown): Promise<T> {
   const response = await fetchWithAuth(method, path, body);
 
-  if (response.status === 401) {
+  if (response.status === 401 && accessToken !== null) {
     const refreshed = await tryRefresh();
     if (!refreshed) {
       logout();
@@ -41,7 +41,11 @@ function buildHeaders(): HeadersInit {
 async function fetchWithAuth(method: Method, path: string, body?: unknown): Promise<Response> {
   const init: RequestInit = { method, headers: buildHeaders(), credentials: 'include' };
   if (body !== undefined) init.body = JSON.stringify(body);
-  return fetch(BASE_URL + path, init);
+  try {
+    return await fetch(BASE_URL + path, init);
+  } catch {
+    throw new Error('Impossible de contacter le serveur. Vérifiez votre connexion.');
+  }
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {

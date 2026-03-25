@@ -43,7 +43,7 @@ router.post('/register', async (req, res) => {
     res.status(201).json({ user, accessToken, refreshToken });
   } catch (err) {
     if (err instanceof AppError && err.code === 'CONFLICT') {
-      res.status(409).json({ error: 'Email already in use' });
+      res.status(409).json({ error: 'Cet email est déjà utilisé.' });
     } else {
       res.status(500).json({ error: 'Internal server error' });
     }
@@ -67,7 +67,7 @@ router.post('/login', async (req, res) => {
     res.json({ user, accessToken, refreshToken });
   } catch (err) {
     if (err instanceof AppError && err.code === 'UNAUTHORIZED') {
-      res.status(401).json({ error: 'Invalid credentials' });
+      res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
     } else {
       res.status(500).json({ error: 'Internal server error' });
     }
@@ -82,9 +82,9 @@ router.post('/refresh', async (req, res) => {
   }
 
   try {
-    const { accessToken, refreshToken } = await authService.refresh(prisma, token);
+    const { accessToken, refreshToken, user } = await authService.refresh(prisma, token);
     res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
-    res.json({ accessToken, refreshToken });
+    res.json({ accessToken, refreshToken, user });
   } catch {
     res.clearCookie('refreshToken', { path: '/' });
     res.status(401).json({ error: 'Invalid refresh token' });

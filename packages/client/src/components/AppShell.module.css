@@ -61,22 +61,23 @@
 
   .desktopBar {
     display: block;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 1rem 2rem;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background-color: var(--bg-primary);
+    border-top: 1px solid var(--border-color);
+    backdrop-filter: blur(8px);
   }
 
   .main {
-    padding-bottom: 1rem;
+    padding-bottom: 5.5rem;
   }
 }
 
 /* Desktop (≥1024px) : marges plus généreuses, layout centré */
 @media (min-width: 1024px) {
-  .desktopBar {
-    padding: 0 1.5rem 2rem;
-  }
-
   .main {
     max-width: 1200px;
     margin: 0 auto;

@@ -124,7 +124,12 @@ export async function refresh(prisma: PrismaClient, token: string) {
     },
   });
 
-  return { accessToken, refreshToken: newRefreshToken };
+  const user = await prisma.user.findUnique({
+    where: { id: payload.sub },
+    select: { id: true, email: true, displayName: true, createdAt: true },
+  });
+
+  return { accessToken, refreshToken: newRefreshToken, user };
 }
 
 export async function logout(prisma: PrismaClient, token: string) {
