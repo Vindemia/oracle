@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useRef, useState } from 'react';
+import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { api } from '../api/client.js';
 import { useTags } from '../hooks/useTags.js';
 import { TagSelector } from './TagSelector.js';
@@ -13,34 +13,46 @@ interface TaskInputProps {
 export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) {
   const { tags } = useTags();
   const inputRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const [title, setTitle] = useState('');
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [tagPanelOpen, setTagPanelOpen] = useState(false);
   const [urgent, setUrgent] = useState(false);
   const [important, setImportant] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!tagPanelOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setTagPanelOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => { document.removeEventListener('mousedown', handler); };
+  }, [tagPanelOpen]);
+
   const reset = () => {
     setTitle('');
-    setPanelOpen(false);
+    setTagPanelOpen(false);
     setUrgent(false);
     setImportant(false);
     setSelectedTagIds([]);
     setTimeout(() => { inputRef.current?.focus(); }, 0);
   };
 
-  const createTask = async (u: boolean, i: boolean, tIds: string[]) => {
+  const createTask = async () => {
     if (!title.trim() || isSubmitting) return;
     setIsSubmitting(true);
     setSubmitError(null);
     try {
       await api.post<Task>('/tasks', {
         title: title.trim(),
-        urgent: u,
-        important: i,
-        tagIds: tIds.length > 0 ? tIds : undefined,
+        urgent,
+        important,
+        tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
       });
       onTaskCreated();
       reset();
@@ -53,58 +65,23 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && title.trim()) {
-      if (panelOpen) {
-        void createTask(urgent, important, selectedTagIds);
-      } else {
-        // Raccourci : Enter direct → La Brume
-        void createTask(false, false, []);
-      }
+      void createTask();
     }
     if (e.key === 'Escape') {
-      setPanelOpen(false);
+      setTagPanelOpen(false);
     }
-  };
-
-  const openPanel = () => {
-    if (title.trim()) setPanelOpen(true);
   };
 
   return (
-    <div className={isDesktop ? styles.desktopWrapper : styles.mobileWrapper}>
-      {/* Panel options */}
-      {panelOpen && (
-        <div className={[styles.panel, isDesktop ? styles.panelDesktop : styles.panelMobile].filter(Boolean).join(' ')}>
-          <div className={styles.toggleRow}>
-            <button
-              type="button"
-              className={[styles.toggle, urgent ? styles.toggleActive : undefined].filter(Boolean).join(' ')}
-              onClick={() => { setUrgent((v) => !v); }}
-            >
-              ⚡ Urgent
-            </button>
-            <button
-              type="button"
-              className={[styles.toggle, important ? styles.toggleActive : undefined].filter(Boolean).join(' ')}
-              onClick={() => { setImportant((v) => !v); }}
-            >
-              ⭐ Important
-            </button>
-          </div>
-
+    <div ref={wrapperRef} className={isDesktop ? styles.desktopWrapper : styles.mobileWrapper}>
+      {/* Volet tags */}
+      {tagPanelOpen && tags.length > 0 && (
+        <div className={[styles.tagPanel, isDesktop ? styles.tagPanelDesktop : ''].filter(Boolean).join(' ')}>
           <TagSelector
             tags={tags}
             selectedIds={selectedTagIds}
             onChange={setSelectedTagIds}
           />
-
-          <button
-            type="button"
-            className={styles.revealBtn}
-            disabled={!title.trim() || isSubmitting}
-            onClick={() => { void createTask(urgent, important, selectedTagIds); }}
-          >
-            {isSubmitting ? 'Révélation…' : '✦ Révéler'}
-          </button>
         </div>
       )}
 
@@ -130,13 +107,47 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
         />
         <button
           type="button"
-          className={styles.optionsBtn}
-          disabled={!title.trim()}
-          onClick={openPanel}
-          aria-label="Options"
-          title="Options (Urgent / Important / Tags)"
+          className={[styles.toggle, urgent ? styles.toggleActive : undefined].filter(Boolean).join(' ')}
+          onClick={() => { setUrgent((v) => !v); }}
+          title="Urgent"
+          aria-label="Urgent"
+          aria-pressed={urgent}
         >
-          ✦ Révéler
+          ⚡ Urgent
+        </button>
+        <button
+          type="button"
+          className={[styles.toggle, important ? styles.toggleActive : undefined].filter(Boolean).join(' ')}
+          onClick={() => { setImportant((v) => !v); }}
+          title="Important"
+          aria-label="Important"
+          aria-pressed={important}
+        >
+          ⭐ Important
+        </button>
+        {tags.length > 0 && (
+          <button
+            type="button"
+            className={[styles.tagBtn, (tagPanelOpen || selectedTagIds.length > 0) ? styles.tagBtnActive : undefined].filter(Boolean).join(' ')}
+            onClick={() => { setTagPanelOpen((v) => !v); }}
+            title="Tags"
+            aria-label="Choisir des tags"
+            aria-pressed={tagPanelOpen}
+          >
+            {selectedTagIds.length > 0
+              ? <span className={styles.tagCount}>{selectedTagIds.length}</span>
+              : '🔖'}
+          </button>
+        )}
+        <button
+          type="button"
+          className={styles.submitBtn}
+          disabled={!title.trim() || isSubmitting}
+          onClick={() => { void createTask(); }}
+          aria-label="Révéler la vision"
+          title="Révéler (Entrée)"
+        >
+          {isSubmitting ? '…' : '✓'}
         </button>
       </div>
     </div>

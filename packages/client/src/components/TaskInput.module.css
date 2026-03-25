@@ -34,7 +34,7 @@
 .inputRow {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   padding: 0.75rem 1rem;
   background-color: var(--bg-surface);
   border-top: 1px solid var(--border-color);
@@ -42,9 +42,14 @@
 
 .desktopWrapper .inputRow {
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  margin-top: 0.5rem;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(139, 92, 246, 0.08),
+    0 0 20px rgba(139, 92, 246, 0.06);
 }
+
+/* ── Input texte ──────────────────────────────────────────── */
 
 .input {
   flex: 1;
@@ -54,7 +59,6 @@
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: 0.9375rem;
-  /* touch target ≥ 44px */
   min-height: 2.75rem;
   padding: 0.5rem 0.875rem;
   outline: none;
@@ -70,46 +74,108 @@
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 }
 
-.optionsBtn {
-  background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-light) 100%);
-  color: #0d0b1a;
-  font-family: var(--font-display);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  border: none;
-  border-radius: var(--radius-md);
-  /* touch target ≥ 44px */
+/* ── Toggles Urgent / Important ───────────────────────────── */
+
+.toggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
   min-height: 2.75rem;
-  padding: 0.5rem 1.125rem;
-  cursor: pointer;
+  padding: 0 0.75rem;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
   white-space: nowrap;
-  transition: opacity 200ms ease-out, box-shadow 200ms ease-out;
-  box-shadow: 0 0 10px rgba(201, 168, 76, 0.25);
+  cursor: pointer;
+  transition: background-color 200ms ease-out, border-color 200ms ease-out, box-shadow 200ms ease-out;
 }
 
-.optionsBtn:hover:not(:disabled) {
+.toggleActive {
+  background-color: var(--bg-overlay);
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+/* ── Bouton Tags ──────────────────────────────────────────── */
+
+.tagBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 200ms ease-out, border-color 200ms ease-out, box-shadow 200ms ease-out;
+}
+
+.tagBtnActive {
+  background-color: var(--bg-overlay);
+  border-color: var(--accent-purple);
+  color: var(--accent-purple-light);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+.tagCount {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--accent-purple-light);
+  line-height: 1;
+}
+
+/* ── Bouton Valider ───────────────────────────────────────── */
+
+.submitBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-light) 100%);
+  color: #0d0b1a;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(201, 168, 76, 0.25);
+  transition: opacity 200ms ease-out, box-shadow 200ms ease-out;
+}
+
+.submitBtn:hover:not(:disabled) {
   opacity: 0.9;
   box-shadow: 0 0 18px rgba(201, 168, 76, 0.4);
 }
 
-.optionsBtn:disabled {
+.submitBtn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-/* ── Panel options ────────────────────────────────────────── */
+/* ── Volet Tags ───────────────────────────────────────────── */
 
-.panel {
+.tagPanel {
   background-color: var(--bg-surface);
   border-top: 1px solid var(--border-color);
   padding: 0.875rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
   animation: slideUp 0.18s ease-out;
 }
 
-.panelDesktop {
+.tagPanelDesktop {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   margin-bottom: 0.5rem;
@@ -124,56 +190,4 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-.toggleRow {
-  display: flex;
-  gap: 0.625rem;
-}
-
-.toggle {
-  flex: 1;
-  padding: 0.5rem;
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 200ms ease-out, border-color 200ms ease-out, color 200ms ease-out;
-}
-
-.toggleActive {
-  background-color: var(--bg-overlay);
-  border-color: var(--accent-purple);
-  color: var(--accent-purple-light);
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
-}
-
-
-.revealBtn {
-  align-self: flex-end;
-  background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-light) 100%);
-  color: #0d0b1a;
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 600;
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 0.625rem 1.5rem;
-  cursor: pointer;
-  transition: opacity 200ms ease-out, box-shadow 200ms ease-out;
-  box-shadow: 0 0 12px rgba(201, 168, 76, 0.3);
-}
-
-.revealBtn:hover:not(:disabled) {
-  opacity: 0.9;
-  box-shadow: 0 0 20px rgba(201, 168, 76, 0.45);
-}
-
-.revealBtn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
