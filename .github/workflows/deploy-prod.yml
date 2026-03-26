@@ -86,6 +86,9 @@ jobs:
           command_timeout: 5m
           timeout: 30s
           script: |
-            cd ~/oracle
-            TAG=${{ inputs.tag }} DOCKER_REGISTRY=ghcr.io/${{ steps.owner.outputs.value }} docker compose -f docker-compose.prod.yml pull
-            TAG=${{ inputs.tag }} DOCKER_REGISTRY=ghcr.io/${{ steps.owner.outputs.value }} docker compose -f docker-compose.prod.yml up -d
+            set -e
+            cd $HOME/oracle
+            export TAG=${{ inputs.tag }}
+            export DOCKER_REGISTRY=ghcr.io/${{ steps.owner.outputs.value }}
+            docker compose -f $HOME/oracle/docker-compose.prod.yml pull
+            docker compose -f $HOME/oracle/docker-compose.prod.yml up -d
