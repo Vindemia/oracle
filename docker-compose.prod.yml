@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: oracle
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: oracle
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oracle"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    image: ${DOCKER_REGISTRY}/oracle-server:${TAG}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: ${PORT:-4300}
+      DATABASE_URL: postgresql://oracle:${DB_PASSWORD}@db:5432/oracle
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+    ports:
+      - "${PORT:-4300}:${PORT:-4300}"
+
+  client:
+    image: ${DOCKER_REGISTRY}/oracle-client:${TAG}
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "${CLIENT_PORT:-4301}:80"
+
+volumes:
+  db_data:
