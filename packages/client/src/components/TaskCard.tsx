@@ -96,7 +96,7 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onU
 
   useEffect(() => {
     if (!menuOpen) return;
-    const handler = (e: MouseEvent | TouchEvent) => {
+    const handler = (e: Event) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }

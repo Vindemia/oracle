@@ -15,7 +15,7 @@ export function StarParticles({ active, onDone }: StarParticlesProps) {
 
     const particles = Array.from({ length: 12 }, (_, i) => {
       const el = document.createElement('span');
-      el.className = styles.particle;
+      el.className = styles.particle ?? '';
       const angle = (i / 12) * 360;
       const dist = 30 + Math.random() * 40;
       el.style.setProperty('--angle', angle.toString() + 'deg');
