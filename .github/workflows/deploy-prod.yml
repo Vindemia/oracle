@@ -40,7 +40,8 @@ jobs:
       - name: Build & push server
         uses: docker/build-push-action@v6
         with:
-          context: packages/server
+          context: .
+          file: packages/server/Dockerfile
           target: production
           push: true
           tags: |
@@ -52,7 +53,8 @@ jobs:
       - name: Build & push client
         uses: docker/build-push-action@v6
         with:
-          context: packages/client
+          context: .
+          file: packages/client/Dockerfile
           target: production
           push: true
           build-args: |
