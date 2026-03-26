@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { getQuadrantMeta } from '../utils/quadrant.js';
 import type { Task } from '../types/index.js';
@@ -37,13 +36,8 @@ function groupByDay(tasks: Task[]): Array<{ label: string; date: string; tasks: 
     }));
 }
 
-interface TaskWithCompletedAt extends Task {
-  completedAt?: string;
-}
-
 export function HistoryView() {
-  const navigate = useNavigate();
-  const [tasks, setTasks] = useState<TaskWithCompletedAt[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
@@ -52,8 +46,8 @@ export function HistoryView() {
   useEffect(() => {
     setIsLoading(true);
     Promise.all([
-      api.get<TaskWithCompletedAt[]>('/tasks?status=DONE'),
-      api.get<TaskWithCompletedAt[]>('/tasks?status=ELIMINATED'),
+      api.get<Task[]>('/tasks?status=DONE'),
+      api.get<Task[]>('/tasks?status=ELIMINATED'),
     ])
       .then(([done, eliminated]) => {
         const all = [...done, ...eliminated].sort((a, b) => {
@@ -74,7 +68,7 @@ export function HistoryView() {
   const loadMore = () => {
     const raw = sessionStorage.getItem('oracle:history');
     if (!raw) return;
-    const all = JSON.parse(raw) as TaskWithCompletedAt[];
+    const all = JSON.parse(raw) as Task[];
     const nextPage = page + 1;
     const nextSlice = all.slice(0, (nextPage + 1) * PAGE_SIZE);
     setTasks(nextSlice);
@@ -87,17 +81,6 @@ export function HistoryView() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.backBtn}
-          onClick={() => { void navigate(-1); }}
-        >
-          ← Retour
-        </button>
-        <h1 className={styles.title}>📜 Prophéties</h1>
-      </header>
-
       <main className={styles.content}>
         {isLoading ? (
           <div className={styles.feedback}>Consultation des archives…</div>

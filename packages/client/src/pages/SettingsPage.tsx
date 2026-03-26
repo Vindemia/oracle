@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTags } from '../hooks/useTags.js';
 import { TagBadge } from '../components/TagBadge.js';
 import { IconPicker } from '../components/IconPicker.js';
@@ -8,7 +7,6 @@ import styles from './SettingsPage.module.css';
 const DEFAULT_COLORS = ['#8b5cf6', '#ef4444', '#38bdf8', '#4ade80', '#f59e0b', '#ec4899', '#6366f1'];
 
 export function SettingsPage() {
-  const navigate = useNavigate();
   const { tags, isLoading, createTag, updateTag, deleteTag, restoreDefaults } = useTags();
 
   const [newName, setNewName] = useState('');
@@ -78,17 +76,6 @@ export function SettingsPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.backBtn}
-          onClick={() => { void navigate(-1); }}
-        >
-          ← Retour
-        </button>
-        <h1 className={styles.title}>⚙ Réglages</h1>
-      </header>
-
       <main className={styles.content}>
         <section className={styles.section}>
           <div className={styles.sectionHeader}>

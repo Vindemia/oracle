@@ -1,5 +1,4 @@
 import { type ReactNode } from 'react';
-import { Header } from './Header.js';
 import { TaskInput } from './TaskInput.js';
 import styles from './AppShell.module.css';
 
@@ -13,7 +12,6 @@ export function AppShell({ children, onTaskCreated }: AppShellProps) {
 
   return (
     <div className={styles.shell}>
-      <Header />
       <main className={styles.main}>
         {children}
         {/* Desktop : TaskInput inline sous la matrice */}
