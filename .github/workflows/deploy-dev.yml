@@ -14,9 +14,15 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set lowercase owner
+        id: owner
+        run: echo "value=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Login to ghcr.io
         uses: docker/login-action@v3
@@ -35,8 +41,8 @@ jobs:
           target: production
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/oracle-server:dev
-            ghcr.io/${{ github.repository_owner }}/oracle-server:dev-${{ github.sha }}
+            ghcr.io/${{ steps.owner.outputs.value }}/oracle-server:dev
+            ghcr.io/${{ steps.owner.outputs.value }}/oracle-server:dev-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -49,8 +55,8 @@ jobs:
           build-args: |
             VITE_API_URL=${{ secrets.DEV_VITE_API_URL }}
           tags: |
-            ghcr.io/${{ github.repository_owner }}/oracle-client:dev
-            ghcr.io/${{ github.repository_owner }}/oracle-client:dev-${{ github.sha }}
+            ghcr.io/${{ steps.owner.outputs.value }}/oracle-client:dev
+            ghcr.io/${{ steps.owner.outputs.value }}/oracle-client:dev-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -60,6 +66,10 @@ jobs:
     needs: build-push
 
     steps:
+      - name: Set lowercase owner
+        id: owner
+        run: echo "value=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: SSH deploy
         uses: appleboy/ssh-action@v1
         with:
@@ -69,5 +79,5 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             cd ~/oracle-dev
-            TAG=dev DOCKER_REGISTRY=ghcr.io/${{ github.repository_owner }} docker compose -f docker-compose.prod.yml pull
-            TAG=dev DOCKER_REGISTRY=ghcr.io/${{ github.repository_owner }} docker compose -f docker-compose.prod.yml up -d
+            TAG=dev DOCKER_REGISTRY=ghcr.io/${{ steps.owner.outputs.value }} docker compose -f docker-compose.prod.yml pull
+            TAG=dev DOCKER_REGISTRY=ghcr.io/${{ steps.owner.outputs.value }} docker compose -f docker-compose.prod.yml up -d
