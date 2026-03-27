@@ -37,16 +37,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # generate doit précéder le lint : sans les types générés, PrismaClient est any
+      # → cascade d'erreurs no-unsafe-* dans auth.service.ts / auth.router.ts
+      - name: Prisma generate
+        working-directory: packages/server
+        run: npx prisma generate
+
       - name: Lint
         run: npm run lint --workspaces --if-present
 
-      - name: Prisma generate & migrate
+      - name: Prisma migrate
         working-directory: packages/server
         env:
           DATABASE_URL: postgresql://oracle:testpassword@localhost:5432/oracle
-        run: |
-          npx prisma generate
-          npx prisma migrate deploy
+        run: npx prisma migrate deploy
 
       - name: Test server
         working-directory: packages/server

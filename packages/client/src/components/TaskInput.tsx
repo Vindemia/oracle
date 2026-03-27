@@ -1,4 +1,4 @@
-import { Lightning, Star, Tag, Sparkle, CircleNotch } from '@phosphor-icons/react';
+import { LightningIcon, StarIcon, TagIcon, SparkleIcon, CircleNotchIcon } from '@phosphor-icons/react';
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { api } from '../api/client.js';
 import { useTags } from '../hooks/useTags.js';
@@ -53,10 +53,10 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-        el.style.bottom = `${offset}px`;
+        el.style.bottom = offset.toString() + 'px';
         document.documentElement.style.setProperty(
           '--mobile-bar-height',
-          `${el.offsetHeight + offset}px`,
+          (el.offsetHeight + offset).toString() + 'px',
         );
       });
     };
@@ -129,7 +129,7 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
         aria-label="Urgent"
         aria-pressed={urgent}
       >
-        <Lightning size={16} weight={urgent ? 'duotone' : 'regular'} />
+        <LightningIcon size={16} weight={urgent ? 'duotone' : 'regular'} />
         Urgent
       </button>
       <button
@@ -140,7 +140,7 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
         aria-label="Important"
         aria-pressed={important}
       >
-        <Star size={16} weight={important ? 'duotone' : 'regular'} />
+        <StarIcon size={16} weight={important ? 'duotone' : 'regular'} />
         Important
       </button>
       {tags.length > 0 && (
@@ -154,7 +154,7 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
         >
           {selectedTagIds.length > 0
             ? <span className={styles.tagCount}>{selectedTagIds.length}</span>
-            : <Tag size={18} weight="regular" />}
+            : <TagIcon size={18} weight="regular" />}
         </button>
       )}
     </>
@@ -211,8 +211,8 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
           title="Révéler (Entrée)"
         >
           {isSubmitting
-            ? <CircleNotch size={20} weight="bold" className={styles.spinner} />
-            : <Sparkle size={20} weight="duotone" />}
+            ? <CircleNotchIcon size={20} weight="bold" className={styles.spinner} />
+            : <SparkleIcon size={20} weight="duotone" />}
         </button>
       </div>
     </div>
