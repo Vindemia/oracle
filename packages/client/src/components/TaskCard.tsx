@@ -17,12 +17,16 @@ interface TaskCardProps {
   onDelete: (id: string) => Promise<void>;
 }
 
+const MENU_HEIGHT_EST = 170;
+
 export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete }: TaskCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [tagPopoverOpen, setTagPopoverOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState({ top: 0, right: 0 });
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
+  const cardRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const tagBtnRef = useRef<HTMLButtonElement>(null);
   const tagPopoverRef = useRef<HTMLDivElement>(null);
@@ -73,6 +77,14 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onU
 
   const openMenu = (e: MouseEvent | TouchEvent) => {
     e.preventDefault();
+    if (cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const top = spaceBelow < MENU_HEIGHT_EST + 8
+        ? Math.max(4, rect.top - MENU_HEIGHT_EST - 4)
+        : rect.bottom + 4;
+      setMenuPos({ top, right: Math.max(8, window.innerWidth - rect.right) });
+    }
     setMenuOpen(true);
     setConfirmDelete(false);
   };
@@ -128,6 +140,7 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onU
 
   return (
     <div
+      ref={cardRef}
       className={[styles.card, isMist ? styles.mist : undefined, isDragging ? styles.dragging : undefined].filter(Boolean).join(' ')}
       style={{ borderLeftColor: quadrantColorVar }}
       draggable
@@ -199,8 +212,12 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onU
         document.body,
       )}
 
-      {menuOpen && (
-        <div className={styles.menu} ref={menuRef}>
+      {menuOpen && createPortal(
+        <div
+          className={styles.menu}
+          ref={menuRef}
+          style={{ top: menuPos.top, right: menuPos.right }}
+        >
           {!task.urgent && (
             <button
               type="button"
@@ -270,7 +287,8 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onU
               Confirmer la suppression
             </button>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
