@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  ci:
+    name: Lint, Test & Build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: oracle
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: oracle
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint --workspaces --if-present
+
+      - name: Prisma generate & migrate
+        working-directory: packages/server
+        env:
+          DATABASE_URL: postgresql://oracle:testpassword@localhost:5432/oracle
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+
+      - name: Test server
+        working-directory: packages/server
+        env:
+          DATABASE_URL: postgresql://oracle:testpassword@localhost:5432/oracle
+          JWT_SECRET: ci_test_secret_minimum_32_characters_long
+          JWT_REFRESH_SECRET: ci_test_refresh_secret_minimum_32_characters_long
+        run: npm test
+
+      - name: Build client
+        working-directory: packages/client
+        env:
+          VITE_API_URL: http://localhost:3001/api
+        run: npm run build

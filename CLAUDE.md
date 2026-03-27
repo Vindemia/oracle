@@ -88,3 +88,12 @@ Modèle Git Flow simplifié :
 ## Specs
 
 Le dossier `specs/` est **ignoré par git** (local only). Les features v1 sont décrites dans `specs/features/v1/`, numérotées `01` à `22` dans l'ordre d'implémentation recommandé. Quand une feature est terminée, renommer le fichier en ajoutant `-done` avant l'extension (ex: `01-feature-monorepo-setup-done.md`).
+
+## Post-feature : notes de découvertes
+
+À la fin de chaque feature, **compléter le fichier spec `-done.md`** avec deux sections :
+
+- **`## Fichiers créés/modifiés`** — tableau listant chaque fichier et son action (Créé / Modifié / Supprimé), avec une note si l'action était inattendue
+- **`## Découvertes inattendues`** — tout ce qui a bloqué, surpris ou dévié du plan initial (erreurs d'outils, comportements de libs, pièges de config, breaking changes). Format : titre court + explication + **impact pour les features suivantes**
+
+Puis **mettre à jour les mémoires** dans `/home/elrik/.claude/projects/-home-elrik-Repos-oracle/memory/` pour tout ce qui est transversal (pattern de code établi, comportement d'outil confirmé, décision d'architecture). Voir `MEMORY.md` pour l'index.

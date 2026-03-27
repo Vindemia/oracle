@@ -12,6 +12,10 @@ node_modules/
 # Build
 dist/
 build/
+*.tsbuildinfo
+
+# Prisma generated
+packages/server/prisma/generated/
 
 # Logs
 *.log
