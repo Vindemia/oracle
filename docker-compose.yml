@@ -47,7 +47,7 @@ services:
     depends_on:
       - server
     environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:3001/api}
+      API_PROXY_TARGET: http://server:3001
     ports:
       - "5173:5173"
     volumes:

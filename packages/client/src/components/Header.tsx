@@ -1,3 +1,4 @@
+import { Scroll, Gear, SignOut } from '@phosphor-icons/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import styles from './Header.module.css';
@@ -27,7 +28,7 @@ export function Header() {
           aria-label="Prophéties Accomplies"
           title="Prophéties Accomplies"
         >
-          📜
+          <Scroll size={20} weight={location.pathname === '/history' ? 'duotone' : 'regular'} />
         </button>
         <button
           className={[styles.iconBtn, location.pathname === '/settings' ? styles.active : null].filter(Boolean).join(' ')}
@@ -35,7 +36,7 @@ export function Header() {
           aria-label="Réglages"
           title="Réglages"
         >
-          ⚙
+          <Gear size={20} weight={location.pathname === '/settings' ? 'duotone' : 'regular'} />
         </button>
         <button
           className={styles.iconBtn}
@@ -43,7 +44,7 @@ export function Header() {
           aria-label="Se déconnecter"
           title="Se déconnecter"
         >
-          ⏻
+          <SignOut size={20} weight="regular" />
         </button>
       </div>
     </header>

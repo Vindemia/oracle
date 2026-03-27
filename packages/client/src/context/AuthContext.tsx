@@ -25,7 +25,7 @@ let pendingRefresh: Promise<{ accessToken: string; user?: User } | null> | null 
 function fetchRefresh(): Promise<{ accessToken: string; user?: User } | null> {
   if (pendingRefresh) return pendingRefresh;
   pendingRefresh = fetch(
-    (import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/auth/refresh',
+    (import.meta.env.VITE_API_URL || '/api') + '/auth/refresh',
     { method: 'POST', credentials: 'include' },
   )
     .then(async (res) => {
