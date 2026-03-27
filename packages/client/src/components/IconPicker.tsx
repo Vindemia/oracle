@@ -52,7 +52,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
               <button
                 key={icon}
                 type="button"
-                className={`${styles.iconBtn} ${icon === value ? styles.selected : ''}`}
+                className={[styles.iconBtn, icon === value ? styles.selected : undefined].filter(Boolean).join(' ')}
                 onClick={() => { onChange(icon); setOpen(false); }}
               >
                 {icon}
