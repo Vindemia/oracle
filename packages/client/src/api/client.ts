@@ -1,4 +1,4 @@
-const BASE_URL: string = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const BASE_URL: string = import.meta.env.VITE_API_URL || '/api';
 
 let accessToken: string | null = null;
 

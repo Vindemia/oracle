@@ -39,7 +39,8 @@
   position: relative;
   z-index: 1;
   padding-top: 4rem; /* hauteur du header fixe */
-  padding-bottom: 5rem; /* hauteur de la BottomBar fixe (mobile) */
+  /* Mis à jour dynamiquement par TaskInput via --mobile-bar-height */
+  padding-bottom: calc(var(--mobile-bar-height, 5rem) + env(safe-area-inset-bottom));
   min-height: 100dvh;
 }
 

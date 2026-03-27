@@ -1,3 +1,4 @@
+import { Lightning, Star, Tag, Sparkle, CircleNotch } from '@phosphor-icons/react';
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { api } from '../api/client.js';
 import { useTags } from '../hooks/useTags.js';
@@ -33,6 +34,51 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
     document.addEventListener('mousedown', handler);
     return () => { document.removeEventListener('mousedown', handler); };
   }, [tagPanelOpen]);
+
+  // Visual Viewport API : compense la barre d'UI dynamique des navigateurs mobiles.
+  // - bottom positioning (pas top) : vv.offsetTop inclut le scroll sur Chrome,
+  //   ce qui casserait le positionnement si on utilisait top.
+  // - requestAnimationFrame : évite la race condition Firefox où window.innerHeight
+  //   et vv.height se mettent à jour dans des events distincts.
+  // - ResizeObserver sur l'élément : met à jour --mobile-bar-height quand la
+  //   toolbar apparaît/disparaît, pour que le contenu ne passe pas sous la barre.
+  useEffect(() => {
+    if (isDesktop || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    let rafId: number;
+    const update = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        el.style.bottom = `${offset}px`;
+        document.documentElement.style.setProperty(
+          '--mobile-bar-height',
+          `${el.offsetHeight + offset}px`,
+        );
+      });
+    };
+
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    update();
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      ro.disconnect();
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+      el.style.bottom = '';
+      document.documentElement.style.removeProperty('--mobile-bar-height');
+    };
+  }, [isDesktop]);
 
   const reset = () => {
     setTitle('');
@@ -72,6 +118,48 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
     }
   };
 
+  /* Boutons Urgent / Important / Tags — partagés entre les deux layouts */
+  const toggleButtons = (
+    <>
+      <button
+        type="button"
+        className={[styles.toggle, urgent ? styles.toggleActive : undefined].filter(Boolean).join(' ')}
+        onClick={() => { setUrgent((v) => !v); }}
+        title="Urgent"
+        aria-label="Urgent"
+        aria-pressed={urgent}
+      >
+        <Lightning size={16} weight={urgent ? 'duotone' : 'regular'} />
+        Urgent
+      </button>
+      <button
+        type="button"
+        className={[styles.toggle, important ? styles.toggleActive : undefined].filter(Boolean).join(' ')}
+        onClick={() => { setImportant((v) => !v); }}
+        title="Important"
+        aria-label="Important"
+        aria-pressed={important}
+      >
+        <Star size={16} weight={important ? 'duotone' : 'regular'} />
+        Important
+      </button>
+      {tags.length > 0 && (
+        <button
+          type="button"
+          className={[styles.tagBtn, (tagPanelOpen || selectedTagIds.length > 0) ? styles.tagBtnActive : undefined].filter(Boolean).join(' ')}
+          onClick={() => { setTagPanelOpen((v) => !v); }}
+          title="Tags"
+          aria-label="Choisir des tags"
+          aria-pressed={tagPanelOpen}
+        >
+          {selectedTagIds.length > 0
+            ? <span className={styles.tagCount}>{selectedTagIds.length}</span>
+            : <Tag size={18} weight="regular" />}
+        </button>
+      )}
+    </>
+  );
+
   return (
     <div ref={wrapperRef} className={isDesktop ? styles.desktopWrapper : styles.mobileWrapper}>
       {/* Volet tags */}
@@ -92,6 +180,13 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
         </div>
       )}
 
+      {/* Mobile : toolbar contextuelle (glisse quand on écrit) */}
+      {!isDesktop && title.length > 0 && (
+        <div className={styles.toolbarRow}>
+          {toggleButtons}
+        </div>
+      )}
+
       {/* Barre de saisie */}
       <div className={styles.inputRow}>
         <input
@@ -105,40 +200,8 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
           onKeyDown={handleKeyDown}
           aria-label="Nouvelle vision"
         />
-        <button
-          type="button"
-          className={[styles.toggle, urgent ? styles.toggleActive : undefined].filter(Boolean).join(' ')}
-          onClick={() => { setUrgent((v) => !v); }}
-          title="Urgent"
-          aria-label="Urgent"
-          aria-pressed={urgent}
-        >
-          ⚡ Urgent
-        </button>
-        <button
-          type="button"
-          className={[styles.toggle, important ? styles.toggleActive : undefined].filter(Boolean).join(' ')}
-          onClick={() => { setImportant((v) => !v); }}
-          title="Important"
-          aria-label="Important"
-          aria-pressed={important}
-        >
-          ⭐ Important
-        </button>
-        {tags.length > 0 && (
-          <button
-            type="button"
-            className={[styles.tagBtn, (tagPanelOpen || selectedTagIds.length > 0) ? styles.tagBtnActive : undefined].filter(Boolean).join(' ')}
-            onClick={() => { setTagPanelOpen((v) => !v); }}
-            title="Tags"
-            aria-label="Choisir des tags"
-            aria-pressed={tagPanelOpen}
-          >
-            {selectedTagIds.length > 0
-              ? <span className={styles.tagCount}>{selectedTagIds.length}</span>
-              : '🔖'}
-          </button>
-        )}
+        {/* Desktop : boutons inline */}
+        {isDesktop && toggleButtons}
         <button
           type="button"
           className={styles.submitBtn}
@@ -147,7 +210,9 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
           aria-label="Révéler la vision"
           title="Révéler (Entrée)"
         >
-          {isSubmitting ? '…' : '✓'}
+          {isSubmitting
+            ? <CircleNotch size={20} weight="bold" className={styles.spinner} />
+            : <Sparkle size={20} weight="duotone" />}
         </button>
       </div>
     </div>
