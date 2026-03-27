@@ -116,6 +116,13 @@
   opacity: 1;
 }
 
+/* Appareils tactiles : toujours visible (pas de :hover natif) */
+@media (hover: none) {
+  .tagBtn {
+    opacity: 0.6;
+  }
+}
+
 .tagBtn:hover {
   color: var(--text-primary);
   background-color: rgba(255, 255, 255, 0.08);
@@ -133,17 +140,15 @@
   animation: menuIn 150ms ease-out;
 }
 
-/* Context menu */
+/* Context menu — rendu en portal (position: fixed) pour passer au-dessus de overflow:hidden */
 .menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  z-index: 100;
+  position: fixed;
+  z-index: 300;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  min-width: 200px;
+  min-width: 210px;
   overflow: hidden;
   animation: menuIn 150ms ease-out;
 }
