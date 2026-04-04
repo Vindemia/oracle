@@ -56,7 +56,7 @@ const updateSchema = z.object({
 });
 
 const planSchema = z.object({
-  plannedFor: z.string().datetime(),
+  plannedFor: z.iso.datetime(),
 });
 
 router.get('/', async (req, res) => {
