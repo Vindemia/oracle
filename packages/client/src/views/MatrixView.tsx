@@ -85,7 +85,7 @@ export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEli
           onUpdateTags={onUpdateTags}
           onDelete={onDelete}
           onReorder={onReorder}
-          onUnplan={onUnplan}
+          {...(onUnplan !== undefined ? { onUnplan } : {})}
         />
       ))}
     </div>

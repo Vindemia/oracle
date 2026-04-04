@@ -66,7 +66,7 @@ function SortableTaskCard({ task, allTags, onComplete, onEliminate, onUpdate, on
           onUpdate={onUpdate}
           onUpdateTags={onUpdateTags}
           onDelete={onDelete}
-          onUnplan={onUnplan}
+          {...(onUnplan !== undefined ? { onUnplan } : {})}
         />
       </div>
     </div>
@@ -171,7 +171,7 @@ export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminat
                   onUpdate={onUpdate}
                   onUpdateTags={onUpdateTags}
                   onDelete={onDelete}
-                  onUnplan={onUnplan}
+                  {...(onUnplan !== undefined ? { onUnplan } : {})}
                 />
               ))}
             </SortableContext>
