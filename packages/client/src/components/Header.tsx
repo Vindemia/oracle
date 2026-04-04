@@ -27,12 +27,12 @@ export function Header() {
         </button>
         <div className={styles.actions}>
           <button
-            className={[styles.iconBtn, helpOpen ? styles.active : null].filter(Boolean).join(' ')}
-            onClick={() => { setHelpOpen((v) => !v); }}
-            aria-label="Guide — Matrice d'Eisenhower"
-            title="Guide"
+            className={[styles.iconBtn, location.pathname === '/focus' ? styles.active : null].filter(Boolean).join(' ')}
+            onClick={() => { toggle('/focus'); }}
+            aria-label="Focus — Phase Planification"
+            title="Focus"
           >
-            <QuestionIcon size={20} weight={helpOpen ? 'duotone' : 'regular'} />
+            <span aria-hidden="true" style={{ fontSize: '1rem', lineHeight: 1 }}>✦</span>
           </button>
           <button
             className={[styles.iconBtn, location.pathname === '/history' ? styles.active : null].filter(Boolean).join(' ')}
@@ -49,6 +49,14 @@ export function Header() {
             title="Réglages"
           >
             <GearIcon size={20} weight={location.pathname === '/settings' ? 'duotone' : 'regular'} />
+          </button>
+          <button
+            className={[styles.iconBtn, helpOpen ? styles.active : null].filter(Boolean).join(' ')}
+            onClick={() => { setHelpOpen((v) => !v); }}
+            aria-label="Guide — Matrice d'Eisenhower"
+            title="Guide"
+          >
+            <QuestionIcon size={20} weight={helpOpen ? 'duotone' : 'regular'} />
           </button>
           <button
             className={styles.iconBtn}

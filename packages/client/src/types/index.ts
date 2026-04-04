@@ -27,9 +27,12 @@ export interface Task {
   important: boolean;
   quadrant: Quadrant;
   status: TaskStatus;
+  position: number;
   userId: string;
   tags: Tag[];
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;
+  plannedFor: string | null;
+  notes: string | null;
 }

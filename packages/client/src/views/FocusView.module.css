@@ -1,0 +1,432 @@
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.75; transform: scale(1.04); }
+}
+
+@keyframes flash {
+  0%   { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+  30%  { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0.45); }
+  100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem 2rem;
+}
+
+.loading {
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-top: 4rem;
+}
+
+/* ── Card centrale ── */
+.card {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ── En-tête ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.quadrantBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-lg);
+  background-color: var(--quadrant-stars-bg);
+  border: 1px solid var(--quadrant-stars-border);
+  color: var(--quadrant-stars);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.counter {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* ── Carte vision ── */
+.taskCard {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: var(--shadow-md), var(--shadow-glow);
+}
+
+.fadeIn {
+  animation: fadeIn 300ms ease-out;
+}
+
+.taskTitle {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  line-height: 1.25;
+  margin: 0;
+}
+
+/* ── Tags ── */
+.tagsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.tagBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.625rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+  font-size: 0.8125rem;
+  background-color: transparent;
+}
+
+/* ── Date picker ── */
+.datePickerRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dateLabel {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.datePicker {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  transition: border-color 150ms ease-out;
+  color-scheme: dark;
+}
+
+.datePicker:focus {
+  outline: none;
+  border-color: var(--quadrant-stars);
+}
+
+/* ── Actions ── */
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.planBtn {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--quadrant-stars);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 150ms ease-out;
+  min-width: 140px;
+}
+
+.planBtn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.planBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.passBtn {
+  padding: 0.75rem 1.25rem;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+
+.passBtn:hover:not(:disabled) {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.passBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Confirmation planification ── */
+.calendarRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+
+.plannedConfirm {
+  color: var(--status-done);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+/* ── État vide ── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  max-width: 400px;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.emptyTitle {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.emptySubtitle {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  margin: 0;
+}
+
+.nextPhaseBtn {
+  margin-top: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  background-color: var(--quadrant-fire);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 150ms ease-out;
+}
+
+.nextPhaseBtn:hover {
+  opacity: 0.85;
+}
+
+.matrixBtn {
+  margin-top: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+}
+
+.matrixBtn:hover {
+  background-color: var(--bg-surface);
+}
+
+/* ── Phase action (FIRE) ── */
+
+.urgenceBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-lg);
+  background-color: var(--quadrant-fire-bg);
+  border: 1px solid var(--quadrant-fire-border);
+  color: var(--quadrant-fire);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.pulseAnim {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.fireCard {
+  border-color: var(--quadrant-fire-border);
+}
+
+.completeBtn {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--status-done);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 150ms ease-out;
+  min-width: 140px;
+}
+
+.completeBtn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.completeBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.successFlash {
+  animation: flash 600ms ease-out;
+}
+
+/* ── Modal agenda ── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modalBox {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 2rem 1.75rem;
+  max-width: 420px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: var(--shadow-md), 0 0 40px rgba(139, 92, 246, 0.15);
+}
+
+.modalConfirm {
+  color: var(--status-done);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
+.modalTitle {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  margin: 0;
+}
+
+.modalActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.modalBtnPrimary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.25rem;
+  background-color: var(--quadrant-stars);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 150ms ease-out;
+}
+
+.modalBtnPrimary:hover {
+  opacity: 0.85;
+}
+
+.modalBtnSecondary {
+  padding: 0.75rem 1.25rem;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+}
+
+.modalBtnSecondary:hover {
+  background-color: var(--bg-secondary);
+}
+
+.modalBtnGhost {
+  padding: 0.625rem 1.25rem;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: color 150ms ease-out;
+}
+
+.modalBtnGhost:hover {
+  color: var(--text-primary);
+}
+

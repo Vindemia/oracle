@@ -84,3 +84,14 @@
   box-shadow: inset 0 0 0 2px currentColor, 0 0 20px rgba(139, 92, 246, 0.15);
   transition: box-shadow 120ms ease-out;
 }
+
+.sortableWrapper {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.sortableWrapper:active,
+.draggingWrapper {
+  cursor: grabbing;
+}

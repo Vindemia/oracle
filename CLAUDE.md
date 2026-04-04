@@ -55,7 +55,9 @@ npm run build --workspaces  # Build tous les packages
 
 Les 4 quadrants (enum `Quadrant`) : `FIRE` (urgent+important), `STARS` (important), `WIND` (urgent), `MIST` (ni l'un ni l'autre). Le champ `quadrant` est **toujours calculé côté serveur** à partir de `urgent` et `important` — ne jamais l'accepter en input client.
 
-Les tâches ont 3 statuts : `ACTIVE`, `DONE`, `ELIMINATED`.
+Les tâches ont 3 statuts : `ACTIVE`, `DONE`, `ELIMINATED`. Actions disponibles : `complete`, `eliminate`, `reactivate` (chacune via `POST /tasks/:id/<action>`).
+
+Les tags (`Tag`) ont les champs `name`, `icon`, `color`, `isDefault`, `userId`. Les tags par défaut (`isDefault: true`) sont partagés ; les autres sont propres à l'utilisateur.
 
 Les migrations sont gérées par Prisma (`prisma/migrations/`). Ne jamais modifier manuellement un fichier de migration déjà commité.
 
@@ -69,10 +71,22 @@ Les migrations sont gérées par Prisma (`prisma/migrations/`). Ne jamais modifi
 
 Les CSS custom properties du thème sont définies dans `packages/client/src/index.css`. Utiliser ces variables pour toute couleur, jamais de valeur hex en dur dans les composants. Fonts : Playfair Display (titres) + Nunito (corps), importées via Google Fonts dans `index.css`.
 
+## Structure client
+
+- `src/views/` — pages composites avec logique métier (`MatrixView`, `HistoryView`)
+- `src/components/` — composants UI réutilisables
+- `src/hooks/` — hooks de données (`useTasks`, `useTags`, `useAuth`) : tous suivent le pattern **optimistic update avec rollback** — l'état local est mis à jour immédiatement, puis rollback sur erreur serveur
+- `src/api/client.ts` — client HTTP singleton ; token en mémoire, `credentials: 'include'` pour les cookies, refresh automatique sur 401
+- `src/types/index.ts` — types partagés (`Task`, `Tag`, `Quadrant`, `TaskStatus`, `User`)
+
 ## Composants UI notables
 
 - **`HelpDrawer`** — tiroir d'aide (slide-in) expliquant la matrice d'Eisenhower. Monté via `createPortal` sur `document.body`. Ouvert/fermé depuis le `Header` (bouton `?`). Fermeture via Escape ou clic sur le bouton X.
 - **`HintTooltip`** — tooltip d'aide contextuel wrappant un élément enfant. Affiche des questions guidantes au survol. Utilisé dans `TaskInput` autour des boutons Urgent et Important.
+
+## Pattern serveur : `taskInclude` + `serialize()`
+
+La relation `Task ↔ Tag` passe par une table de jointure `TaskTag`. Tout accès aux tâches doit utiliser `taskInclude` (qui inclut `{ tags: { include: { tag: true } } }`) et la fonction `serialize()` qui aplatit `task.tags[].tag` en tableau de `Tag` avant retour au client. Ne pas retourner le modèle Prisma brut.
 
 ## Stratégie de branches
 
