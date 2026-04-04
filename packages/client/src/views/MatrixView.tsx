@@ -18,10 +18,11 @@ interface MatrixViewProps {
   onDelete: (id: string) => Promise<void>;
   onReorder: (quadrant: Quadrant, orderedIds: string[]) => Promise<void>;
   onUnplan?: (id: string) => Promise<void>;
+  onPlan?: (id: string, date: string) => Promise<void>;
   onFocusInput?: () => void;
 }
 
-export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onReorder, onUnplan, onFocusInput }: MatrixViewProps) {
+export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onReorder, onUnplan, onPlan, onFocusInput }: MatrixViewProps) {
   const tasksByQuadrant = useMemo(() => {
     const map: Record<Quadrant, Task[]> = { FIRE: [], STARS: [], WIND: [], MIST: [] };
     for (const task of tasks) {
@@ -86,6 +87,7 @@ export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEli
           onDelete={onDelete}
           onReorder={onReorder}
           {...(onUnplan !== undefined ? { onUnplan } : {})}
+          {...(onPlan !== undefined ? { onPlan } : {})}
         />
       ))}
     </div>
