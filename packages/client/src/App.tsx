@@ -10,6 +10,7 @@ import { RegisterPage } from './pages/RegisterPage.js';
 import { MatrixView } from './views/MatrixView.js';
 import { SettingsPage } from './pages/SettingsPage.js';
 import { HistoryView } from './views/HistoryView.js';
+import { FocusView } from './views/FocusView.js';
 import { useTasks } from './hooks/useTasks.js';
 import { useTags } from './hooks/useTags.js';
 
@@ -26,8 +27,44 @@ function focusTaskInput() {
   document.querySelector<HTMLInputElement>('[data-task-input]')?.focus();
 }
 
+function FocusRoute() {
+  const { tasks, isLoading, refresh, reorderTasks, planTask, completeTask } = useTasks();
+  const { tags: allTags } = useTags();
+
+  const handlePass = async (id: string) => {
+    const starsIds = tasks
+      .filter((t) => t.quadrant === 'STARS' && t.status === 'ACTIVE')
+      .sort((a, b) => a.position - b.position)
+      .map((t) => t.id);
+    const without = starsIds.filter((sid) => sid !== id);
+    await reorderTasks('STARS', [...without, id]);
+  };
+
+  const handlePassFire = async (id: string) => {
+    const fireIds = tasks
+      .filter((t) => t.quadrant === 'FIRE' && t.status === 'ACTIVE')
+      .sort((a, b) => a.position - b.position)
+      .map((t) => t.id);
+    const without = fireIds.filter((fid) => fid !== id);
+    await reorderTasks('FIRE', [...without, id]);
+  };
+
+  return (
+    <FocusView
+      tasks={tasks}
+      isLoading={isLoading}
+      allTags={allTags}
+      onPlan={planTask}
+      onPass={handlePass}
+      onComplete={completeTask}
+      onPassFire={handlePassFire}
+      onTaskCreated={refresh}
+    />
+  );
+}
+
 function MatrixRoute() {
-  const { tasks, isLoading, error, refresh, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask, reorderTasks } = useTasks();
+  const { tasks, isLoading, error, refresh, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask, reorderTasks, unplanTask } = useTasks();
   const { tags: allTags } = useTags();
   return (
     <AppShell onTaskCreated={refresh}>
@@ -42,6 +79,7 @@ function MatrixRoute() {
         onUpdateTags={updateTaskTags}
         onDelete={deleteTask}
         onReorder={reorderTasks}
+        onUnplan={unplanTask}
         onFocusInput={focusTaskInput}
       />
     </AppShell>
@@ -65,6 +103,7 @@ export default function App() {
               }
             >
               <Route path="/" element={<MatrixRoute />} />
+              <Route path="/focus" element={<FocusRoute />} />
               <Route path="/history" element={<HistoryView />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>

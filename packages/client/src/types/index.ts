@@ -33,4 +33,6 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;
+  plannedFor: string | null;
+  notes: string | null;
 }

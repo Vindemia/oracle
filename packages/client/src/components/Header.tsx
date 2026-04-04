@@ -35,6 +35,14 @@ export function Header() {
             <QuestionIcon size={20} weight={helpOpen ? 'duotone' : 'regular'} />
           </button>
           <button
+            className={[styles.iconBtn, location.pathname === '/focus' ? styles.active : null].filter(Boolean).join(' ')}
+            onClick={() => { toggle('/focus'); }}
+            aria-label="Focus — Phase Planification"
+            title="Focus"
+          >
+            <span aria-hidden="true" style={{ fontSize: '1rem', lineHeight: 1 }}>✦</span>
+          </button>
+          <button
             className={[styles.iconBtn, location.pathname === '/history' ? styles.active : null].filter(Boolean).join(' ')}
             onClick={() => { toggle('/history'); }}
             aria-label="Prophéties Accomplies"
