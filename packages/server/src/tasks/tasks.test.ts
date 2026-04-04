@@ -319,3 +319,123 @@ describe('POST /api/tasks/reorder', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('GET /api/tasks — champs plannedFor et notes', () => {
+  it('retourne plannedFor et notes dans chaque tâche', async () => {
+    const tasks = [mockTask(), mockTask({ id: 'task-2', plannedFor: new Date('2099-01-01T10:00:00Z'), notes: 'une note' })];
+    vi.mocked(prismaMock.task.findMany).mockResolvedValue(tasks as never);
+
+    const res = await request(app)
+      .get('/api/tasks')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body[0]).toHaveProperty('plannedFor', null);
+    expect(res.body[0]).toHaveProperty('notes', null);
+    expect(res.body[1].plannedFor).toBe('2099-01-01T10:00:00.000Z');
+    expect(res.body[1].notes).toBe('une note');
+  });
+});
+
+describe('POST /api/tasks/:id/plan', () => {
+  it('planifie la tâche avec une date valide dans le futur', async () => {
+    const futureDate = new Date(Date.now() + 86400000).toISOString();
+    const existing = mockTask();
+    const updated = mockTask({ plannedFor: new Date(futureDate) });
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(existing as never);
+    vi.mocked(prismaMock.task.update).mockResolvedValue(updated as never);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/plan')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ plannedFor: futureDate });
+
+    expect(res.status).toBe(200);
+    expect(res.body.plannedFor).toBeDefined();
+    expect(vi.mocked(prismaMock.task.update)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ plannedFor: new Date(futureDate) }),
+      }),
+    );
+  });
+
+  it('400 si la date est dans le passé', async () => {
+    const pastDate = new Date(Date.now() - 86400000).toISOString();
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/plan')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ plannedFor: pastDate });
+
+    expect(res.status).toBe(400);
+    expect(prismaMock.task.update).not.toHaveBeenCalled();
+  });
+
+  it('400 si plannedFor est absent ou invalide', async () => {
+    const res = await request(app)
+      .post('/api/tasks/task-1/plan')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ plannedFor: 'not-a-date' });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('404 si la tâche appartient à un autre utilisateur', async () => {
+    const futureDate = new Date(Date.now() + 86400000).toISOString();
+    const otherTask = mockTask({ userId: OTHER_USER_ID });
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(otherTask as never);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/plan')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ plannedFor: futureDate });
+
+    expect(res.status).toBe(404);
+    expect(prismaMock.task.update).not.toHaveBeenCalled();
+  });
+
+  it('404 si tâche inexistante', async () => {
+    const futureDate = new Date(Date.now() + 86400000).toISOString();
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(null);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/plan')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ plannedFor: futureDate });
+
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /api/tasks/:id/unplan', () => {
+  it('retire la date plannedFor', async () => {
+    const existing = mockTask({ plannedFor: new Date('2099-01-01T10:00:00Z') });
+    const updated = mockTask({ plannedFor: null });
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(existing as never);
+    vi.mocked(prismaMock.task.update).mockResolvedValue(updated as never);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/unplan')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.plannedFor).toBeNull();
+    expect(vi.mocked(prismaMock.task.update)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ plannedFor: null }),
+      }),
+    );
+  });
+
+  it('404 si tâche d\'un autre utilisateur', async () => {
+    const otherTask = mockTask({ userId: OTHER_USER_ID });
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(otherTask as never);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/unplan')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+    expect(prismaMock.task.update).not.toHaveBeenCalled();
+  });
+});

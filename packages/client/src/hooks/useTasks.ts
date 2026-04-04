@@ -13,6 +13,8 @@ interface UseTasksResult {
   updateTaskTags: (id: string, newTags: Tag[]) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   reorderTasks: (quadrant: Quadrant, orderedIds: string[]) => Promise<void>;
+  planTask: (id: string, date: string) => Promise<void>;
+  unplanTask: (id: string) => Promise<void>;
 }
 
 export function useTasks(): UseTasksResult {
@@ -135,5 +137,31 @@ export function useTasks(): UseTasksResult {
     }
   }, [rawTasks]);
 
-  return { tasks, isLoading, error, refresh: fetchTasks, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask, reorderTasks };
+  const planTask = useCallback(async (id: string, date: string) => {
+    const prev = rawTasks;
+    setRawTasks((t) => t.map((task) => task.id === id ? { ...task, plannedFor: date } : task));
+    try {
+      await api.post<Task>('/tasks/' + id + '/plan', { plannedFor: date });
+    } catch (err) {
+      setRawTasks(prev);
+      throw err;
+    }
+  }, [rawTasks]);
+
+  const unplanTask = useCallback(async (id: string) => {
+    const prev = rawTasks;
+    setRawTasks((t) => t.map((task) => task.id === id ? { ...task, plannedFor: null } : task));
+    try {
+      await api.post<Task>('/tasks/' + id + '/unplan', {});
+    } catch (err) {
+      setRawTasks(prev);
+      throw err;
+    }
+  }, [rawTasks]);
+
+  return {
+    tasks, isLoading, error, refresh: fetchTasks,
+    completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask,
+    reorderTasks, planTask, unplanTask,
+  };
 }

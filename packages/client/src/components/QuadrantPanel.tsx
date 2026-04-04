@@ -35,9 +35,10 @@ interface SortableTaskCardProps {
   onUpdate: (id: string, data: Partial<Pick<Task, 'urgent' | 'important'>>) => Promise<void>;
   onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onUnplan?: (id: string) => Promise<void>;
 }
 
-function SortableTaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete }: SortableTaskCardProps) {
+function SortableTaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onUnplan }: SortableTaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
   const wrapperStyle = {
@@ -65,6 +66,7 @@ function SortableTaskCard({ task, allTags, onComplete, onEliminate, onUpdate, on
           onUpdate={onUpdate}
           onUpdateTags={onUpdateTags}
           onDelete={onDelete}
+          onUnplan={onUnplan}
         />
       </div>
     </div>
@@ -81,9 +83,10 @@ interface QuadrantPanelProps {
   onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onReorder: (quadrant: Quadrant, orderedIds: string[]) => Promise<void>;
+  onUnplan?: (id: string) => Promise<void>;
 }
 
-export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onReorder }: QuadrantPanelProps) {
+export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onReorder, onUnplan }: QuadrantPanelProps) {
   const meta = getQuadrantMeta(quadrant);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -168,6 +171,7 @@ export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminat
                   onUpdate={onUpdate}
                   onUpdateTags={onUpdateTags}
                   onDelete={onDelete}
+                  onUnplan={onUnplan}
                 />
               ))}
             </SortableContext>

@@ -17,10 +17,11 @@ interface MatrixViewProps {
   onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onReorder: (quadrant: Quadrant, orderedIds: string[]) => Promise<void>;
+  onUnplan?: (id: string) => Promise<void>;
   onFocusInput?: () => void;
 }
 
-export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onReorder, onFocusInput }: MatrixViewProps) {
+export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onReorder, onUnplan, onFocusInput }: MatrixViewProps) {
   const tasksByQuadrant = useMemo(() => {
     const map: Record<Quadrant, Task[]> = { FIRE: [], STARS: [], WIND: [], MIST: [] };
     for (const task of tasks) {
@@ -84,6 +85,7 @@ export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEli
           onUpdateTags={onUpdateTags}
           onDelete={onDelete}
           onReorder={onReorder}
+          onUnplan={onUnplan}
         />
       ))}
     </div>

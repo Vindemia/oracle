@@ -27,7 +27,7 @@ function focusTaskInput() {
 }
 
 function MatrixRoute() {
-  const { tasks, isLoading, error, refresh, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask, reorderTasks } = useTasks();
+  const { tasks, isLoading, error, refresh, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask, reorderTasks, unplanTask } = useTasks();
   const { tags: allTags } = useTags();
   return (
     <AppShell onTaskCreated={refresh}>
@@ -42,6 +42,7 @@ function MatrixRoute() {
         onUpdateTags={updateTaskTags}
         onDelete={deleteTask}
         onReorder={reorderTasks}
+        onUnplan={unplanTask}
         onFocusInput={focusTaskInput}
       />
     </AppShell>
