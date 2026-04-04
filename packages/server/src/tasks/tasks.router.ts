@@ -8,6 +8,10 @@ const router = Router();
 
 router.use(authMiddleware);
 
+const reorderSchema = z.array(
+  z.object({ id: z.uuid(), position: z.number().int().min(0) }),
+).min(1);
+
 const taskInclude = {
   tags: { include: { tag: true } },
 } as const;
@@ -64,7 +68,7 @@ router.get('/', async (req, res) => {
         ...(tagId !== undefined ? { tags: { some: { tagId } } } : {}),
       },
       include: taskInclude,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ quadrant: 'asc' }, { position: 'asc' }, { createdAt: 'desc' }],
     });
     res.json(tasks.map(serialize));
   } catch {
@@ -83,12 +87,19 @@ router.post('/', async (req, res) => {
   const quadrant = calcQuadrant(urgent, important);
 
   try {
+    const maxPos = await prisma.task.aggregate({
+      where: { userId: req.userId, quadrant },
+      _max: { position: true },
+    });
+    const position = (maxPos._max.position ?? -1) + 1;
+
     const task = await prisma.task.create({
       data: {
         title,
         urgent,
         important,
         quadrant,
+        position,
         userId: req.userId,
         ...(tagIds?.length
           ? { tags: { create: tagIds.map((tagId) => ({ tagId })) } }
@@ -99,6 +110,49 @@ router.post('/', async (req, res) => {
     res.status(201).json(serialize(task));
   } catch {
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/reorder', async (req, res, next) => {
+  const parsed = reorderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Validation error', details: parsed.error.issues });
+    return;
+  }
+
+  const items = parsed.data;
+  const ids = items.map((item) => item.id);
+
+  try {
+    const tasks = await prisma.task.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, userId: true },
+    });
+
+    const notOwned = tasks.find((t) => t.userId !== req.userId);
+    if (notOwned) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+
+    const notFound = ids.find((id) => !tasks.some((t) => t.id === id));
+    if (notFound) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    await prisma.$transaction(
+      items.map((item) =>
+        prisma.task.update({
+          where: { id: item.id },
+          data: { position: item.position },
+        }),
+      ),
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
   }
 });
 
@@ -120,10 +174,17 @@ router.patch('/:id', async (req, res) => {
 
     const newUrgent = urgent ?? existing.urgent;
     const newImportant = important ?? existing.important;
-    const quadrant =
-      urgent !== undefined || important !== undefined
-        ? calcQuadrant(newUrgent, newImportant)
-        : undefined;
+    const quadrantChanged = urgent !== undefined || important !== undefined;
+    const quadrant = quadrantChanged ? calcQuadrant(newUrgent, newImportant) : undefined;
+
+    let newPosition: number | undefined;
+    if (quadrantChanged && quadrant !== undefined && quadrant !== existing.quadrant) {
+      const maxPos = await prisma.task.aggregate({
+        where: { userId: req.userId, quadrant },
+        _max: { position: true },
+      });
+      newPosition = (maxPos._max.position ?? -1) + 1;
+    }
 
     const task = await prisma.task.update({
       where: { id: req.params['id'] },
@@ -132,6 +193,7 @@ router.patch('/:id', async (req, res) => {
         ...(urgent !== undefined ? { urgent } : {}),
         ...(important !== undefined ? { important } : {}),
         ...(quadrant !== undefined ? { quadrant } : {}),
+        ...(newPosition !== undefined ? { position: newPosition } : {}),
         ...(status !== undefined ? { status } : {}),
         ...(tagIds !== undefined
           ? { tags: { deleteMany: {}, create: tagIds.map((tagId) => ({ tagId })) } }
