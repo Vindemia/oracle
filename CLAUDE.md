@@ -69,6 +69,11 @@ Les migrations sont gérées par Prisma (`prisma/migrations/`). Ne jamais modifi
 
 Les CSS custom properties du thème sont définies dans `packages/client/src/index.css`. Utiliser ces variables pour toute couleur, jamais de valeur hex en dur dans les composants. Fonts : Playfair Display (titres) + Nunito (corps), importées via Google Fonts dans `index.css`.
 
+## Composants UI notables
+
+- **`HelpDrawer`** — tiroir d'aide (slide-in) expliquant la matrice d'Eisenhower. Monté via `createPortal` sur `document.body`. Ouvert/fermé depuis le `Header` (bouton `?`). Fermeture via Escape ou clic sur le bouton X.
+- **`HintTooltip`** — tooltip d'aide contextuel wrappant un élément enfant. Affiche des questions guidantes au survol. Utilisé dans `TaskInput` autour des boutons Urgent et Important.
+
 ## Stratégie de branches
 
 Modèle Git Flow simplifié :

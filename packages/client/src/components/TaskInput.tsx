@@ -2,6 +2,7 @@ import { LightningIcon, StarIcon, TagIcon, SparkleIcon, CircleNotchIcon } from '
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { api } from '../api/client.js';
 import { useTags } from '../hooks/useTags.js';
+import { HintTooltip } from './HintTooltip.js';
 import { TagSelector } from './TagSelector.js';
 import type { Task } from '../types/index.js';
 import styles from './TaskInput.module.css';
@@ -121,28 +122,38 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
   /* Boutons Urgent / Important / Tags — partagés entre les deux layouts */
   const toggleButtons = (
     <>
-      <button
-        type="button"
-        className={[styles.toggle, urgent ? styles.toggleActive : undefined].filter(Boolean).join(' ')}
-        onClick={() => { setUrgent((v) => !v); }}
-        title="Urgent"
-        aria-label="Urgent"
-        aria-pressed={urgent}
-      >
-        <LightningIcon size={16} weight={urgent ? 'duotone' : 'regular'} />
-        Urgent
-      </button>
-      <button
-        type="button"
-        className={[styles.toggle, important ? styles.toggleActive : undefined].filter(Boolean).join(' ')}
-        onClick={() => { setImportant((v) => !v); }}
-        title="Important"
-        aria-label="Important"
-        aria-pressed={important}
-      >
-        <StarIcon size={16} weight={important ? 'duotone' : 'regular'} />
-        Important
-      </button>
+      <HintTooltip questions={[
+        'Une conséquence réelle si ce n\'est pas fait aujourd\'hui ?',
+        'Quelqu\'un attend une réponse ou une livraison ?',
+      ]}>
+        <button
+          type="button"
+          className={[styles.toggle, urgent ? styles.toggleActive : undefined].filter(Boolean).join(' ')}
+          onClick={() => { setUrgent((v) => !v); }}
+          title="Urgent"
+          aria-label="Urgent"
+          aria-pressed={urgent}
+        >
+          <LightningIcon size={16} weight={urgent ? 'duotone' : 'regular'} />
+          Urgent
+        </button>
+      </HintTooltip>
+      <HintTooltip questions={[
+        'Ça me rapproche d\'un objectif qui compte vraiment ?',
+        'Je le regretterais dans 6 mois si ce n\'est pas fait ?',
+      ]}>
+        <button
+          type="button"
+          className={[styles.toggle, important ? styles.toggleActive : undefined].filter(Boolean).join(' ')}
+          onClick={() => { setImportant((v) => !v); }}
+          title="Important"
+          aria-label="Important"
+          aria-pressed={important}
+        >
+          <StarIcon size={16} weight={important ? 'duotone' : 'regular'} />
+          Important
+        </button>
+      </HintTooltip>
       {tags.length > 0 && (
         <button
           type="button"
