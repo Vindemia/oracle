@@ -5,6 +5,7 @@ import type { Tag, Task } from '../types/index.js';
 import { formatRelativeDate } from '../utils/dates.js';
 import { hexToRgba } from '../utils/colors.js';
 import { TagSelector } from './TagSelector.js';
+import { CalendarButton } from './CalendarButton.js';
 import styles from './TaskCard.module.css';
 
 interface TaskCardProps {
@@ -205,6 +206,7 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onU
         </div>
         <div className={styles.actions}>
           <span className={styles.date}>{formatRelativeDate(task.createdAt)}</span>
+          {task.plannedFor !== null && <CalendarButton task={task} />}
           {allTags.length > 0 && (
             <button
               ref={tagBtnRef}
