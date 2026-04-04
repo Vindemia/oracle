@@ -50,21 +50,22 @@ function FocusRoute() {
   };
 
   return (
-    <FocusView
-      tasks={tasks}
-      isLoading={isLoading}
-      allTags={allTags}
-      onPlan={planTask}
-      onPass={handlePass}
-      onComplete={completeTask}
-      onPassFire={handlePassFire}
-      onTaskCreated={refresh}
-    />
+    <AppShell onTaskCreated={refresh}>
+      <FocusView
+        tasks={tasks}
+        isLoading={isLoading}
+        allTags={allTags}
+        onPlan={planTask}
+        onPass={handlePass}
+        onComplete={completeTask}
+        onPassFire={handlePassFire}
+      />
+    </AppShell>
   );
 }
 
 function MatrixRoute() {
-  const { tasks, isLoading, error, refresh, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask, reorderTasks, unplanTask } = useTasks();
+  const { tasks, isLoading, error, refresh, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask, reorderTasks, unplanTask, planTask } = useTasks();
   const { tags: allTags } = useTags();
   return (
     <AppShell onTaskCreated={refresh}>
@@ -80,6 +81,7 @@ function MatrixRoute() {
         onDelete={deleteTask}
         onReorder={reorderTasks}
         onUnplan={unplanTask}
+        onPlan={planTask}
         onFocusInput={focusTaskInput}
       />
     </AppShell>

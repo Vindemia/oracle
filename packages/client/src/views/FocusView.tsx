@@ -1,8 +1,8 @@
 import { type ChangeEvent, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import type { Tag, Task } from '../types/index.js';
-import { CalendarButton } from '../components/CalendarButton.js';
-import { TaskInput } from '../components/TaskInput.js';
+import { CalendarButton, buildGoogleCalUrl, downloadIcal } from '../components/CalendarButton.js';
 import styles from './FocusView.module.css';
 
 function getDefaultDatetime(): string {
@@ -22,10 +22,9 @@ interface FocusViewProps {
   onPass: (id: string) => Promise<void>;
   onComplete: (id: string) => Promise<void>;
   onPassFire: (id: string) => Promise<void>;
-  onTaskCreated: () => void;
 }
 
-export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass, onComplete, onPassFire, onTaskCreated }: FocusViewProps) {
+export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass, onComplete, onPassFire }: FocusViewProps) {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<string>(getDefaultDatetime());
   const [plannedTask, setPlannedTask] = useState<Task | null>(null);
@@ -34,6 +33,7 @@ export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass,
   const [isCompleting, setIsCompleting] = useState(false);
   const [isPassingFire, setIsPassingFire] = useState(false);
   const [showSuccessFlash, setShowSuccessFlash] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
 
   const unplannedStars = tasks
     .filter((t) => t.quadrant === 'STARS' && t.status === 'ACTIVE' && t.plannedFor === null)
@@ -57,9 +57,7 @@ export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass,
       await onPlan(currentTask.id, isoDate);
       setPlannedTask({ ...currentTask, plannedFor: isoDate });
       setSelectedDate(getDefaultDatetime());
-      setTimeout(() => {
-        setPlannedTask(null);
-      }, 1500);
+      setShowCalendarModal(true);
     } finally {
       setIsPlanning(false);
     }
@@ -89,6 +87,11 @@ export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass,
     }
   };
 
+  const dismissCalendarModal = () => {
+    setShowCalendarModal(false);
+    setPlannedTask(null);
+  };
+
   const handlePassFire = async () => {
     if (!fireTasks[0] || isPassingFire) return;
     setIsPassingFire(true);
@@ -98,6 +101,44 @@ export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass,
       setIsPassingFire(false);
     }
   };
+
+  /* ── Modal agenda (rendu indépendamment de la phase) ── */
+  const calendarModal = showCalendarModal && plannedTask !== null
+    ? createPortal(
+        <div className={styles.modalOverlay} role="dialog" aria-modal="true">
+          <div className={styles.modalBox}>
+            <p className={styles.modalConfirm}>Vision planifiée ✓</p>
+            <h2 className={styles.modalTitle}>L'ajouter à votre agenda ?</h2>
+            <div className={styles.modalActions}>
+              <a
+                href={buildGoogleCalUrl(plannedTask)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.modalBtnPrimary}
+                onClick={dismissCalendarModal}
+              >
+                Google Agenda
+              </a>
+              <button
+                type="button"
+                className={styles.modalBtnSecondary}
+                onClick={() => { downloadIcal(plannedTask); dismissCalendarModal(); }}
+              >
+                Télécharger .ics
+              </button>
+              <button
+                type="button"
+                className={styles.modalBtnGhost}
+                onClick={dismissCalendarModal}
+              >
+                Non, passer →
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
 
   if (isLoading) {
     return (
@@ -110,23 +151,23 @@ export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass,
   /* ── Phase done ── */
   if (phase === 'done') {
     return (
-      <div className={styles.container}>
-        <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>🌟</div>
-          <h2 className={styles.emptyTitle}>Le feu est maîtrisé 🌟</h2>
-          <p className={styles.emptySubtitle}>Vos priorités sont maîtrisées.</p>
-          <button
-            type="button"
-            className={styles.matrixBtn}
-            onClick={() => { void navigate('/'); }}
-          >
-            Retour à la matrice
-          </button>
+      <>
+        <div className={styles.container}>
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>🌟</div>
+            <h2 className={styles.emptyTitle}>Le feu est maîtrisé 🌟</h2>
+            <p className={styles.emptySubtitle}>Vos priorités sont maîtrisées.</p>
+            <button
+              type="button"
+              className={styles.matrixBtn}
+              onClick={() => { void navigate('/'); }}
+            >
+              Retour à la matrice
+            </button>
+          </div>
         </div>
-        <div className={styles.taskInputArea}>
-          <TaskInput onTaskCreated={onTaskCreated} isDesktop />
-        </div>
-      </div>
+        {calendarModal}
+      </>
     );
   }
 
@@ -135,157 +176,145 @@ export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass,
     const currentFire = fireTasks[0];
     if (!currentFire) return null;
     return (
-      <div className={styles.container}>
-        <div className={styles.card}>
-          {/* En-tête */}
-          <div className={styles.header}>
-            <span className={[styles.urgenceBadge, styles.pulseAnim].filter(Boolean).join(' ')}>
-              ⚡ Les Urgences
-            </span>
-            <span className={styles.counter}>
-              {fireTasks.length.toString() + ' urgence' + (fireTasks.length > 1 ? 's' : '')}
-            </span>
-          </div>
+      <>
+        <div className={styles.container}>
+          <div className={styles.card}>
+            {/* En-tête */}
+            <div className={styles.header}>
+              <span className={[styles.urgenceBadge, styles.pulseAnim].filter(Boolean).join(' ')}>
+                ⚡ Les Urgences
+              </span>
+              <span className={styles.counter}>
+                {fireTasks.length.toString() + ' urgence' + (fireTasks.length > 1 ? 's' : '')}
+              </span>
+            </div>
 
-          {/* Carte vision */}
-          <div className={[styles.taskCard, styles.fireCard, showSuccessFlash ? styles.successFlash : undefined].filter(Boolean).join(' ')}>
-            <h1 className={styles.taskTitle}>{currentFire.title}</h1>
+            {/* Carte vision */}
+            <div className={[styles.taskCard, styles.fireCard, showSuccessFlash ? styles.successFlash : undefined].filter(Boolean).join(' ')}>
+              <h1 className={styles.taskTitle}>{currentFire.title}</h1>
 
-            {/* Tags */}
-            {currentFire.tags.length > 0 && (
-              <div className={styles.tagsRow}>
-                {currentFire.tags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className={styles.tagBadge}
-                    style={{ borderColor: tag.color, color: tag.color }}
-                  >
-                    {tag.icon} {tag.name}
-                  </span>
-                ))}
+              {/* Tags */}
+              {currentFire.tags.length > 0 && (
+                <div className={styles.tagsRow}>
+                  {currentFire.tags.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className={styles.tagBadge}
+                      style={{ borderColor: tag.color, color: tag.color }}
+                    >
+                      {tag.icon} {tag.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* CalendarButton si planifiée */}
+              {currentFire.plannedFor !== null && (
+                <div className={styles.calendarRow}>
+                  <CalendarButton task={currentFire} />
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className={styles.actions}>
+                <button
+                  type="button"
+                  className={styles.completeBtn}
+                  onClick={() => { void handleComplete(); }}
+                  disabled={isCompleting}
+                >
+                  {isCompleting ? 'Traitement...' : "C'est fait ✓"}
+                </button>
+                <button
+                  type="button"
+                  className={styles.passBtn}
+                  onClick={() => { void handlePassFire(); }}
+                  disabled={isPassingFire}
+                >
+                  {isPassingFire ? '...' : 'Passer →'}
+                </button>
               </div>
-            )}
-
-            {/* CalendarButton si planifiée */}
-            {currentFire.plannedFor !== null && (
-              <div className={styles.calendarRow}>
-                <CalendarButton task={currentFire} />
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className={styles.actions}>
-              <button
-                type="button"
-                className={styles.completeBtn}
-                onClick={() => { void handleComplete(); }}
-                disabled={isCompleting}
-              >
-                {isCompleting ? 'Traitement...' : "C'est fait ✓"}
-              </button>
-              <button
-                type="button"
-                className={styles.passBtn}
-                onClick={() => { void handlePassFire(); }}
-                disabled={isPassingFire}
-              >
-                {isPassingFire ? '...' : 'Passer →'}
-              </button>
             </div>
           </div>
         </div>
-
-        <div className={styles.taskInputArea}>
-          <TaskInput onTaskCreated={onTaskCreated} isDesktop />
-        </div>
-      </div>
+        {calendarModal}
+      </>
     );
   }
 
   /* ── Phase planning (STARS) ── */
-  const currentTask = plannedTask ?? unplannedStars[0] ?? null;
+  const currentTask = unplannedStars[0] ?? null;
 
   return (
-    <div className={styles.container}>
-      <div className={styles.card}>
-        {/* En-tête */}
-        <div className={styles.header}>
-          <span className={styles.quadrantBadge}>✦ Les Étoiles</span>
-          <span className={styles.counter}>
-            {unplannedStars.length.toString() + ' vision' + (unplannedStars.length > 1 ? 's' : '') + ' à planifier'}
-          </span>
-        </div>
-
-        {/* Vision courante */}
-        {currentTask !== null && (
-          <div className={[styles.taskCard, plannedTask !== null ? styles.fadeIn : undefined].filter(Boolean).join(' ')}>
-            <h1 className={styles.taskTitle}>{currentTask.title}</h1>
-
-            {/* Tags */}
-            {currentTask.tags.length > 0 && (
-              <div className={styles.tagsRow}>
-                {currentTask.tags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className={styles.tagBadge}
-                    style={{ borderColor: tag.color, color: tag.color }}
-                  >
-                    {tag.icon} {tag.name}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* CalendarButton si vient d'être planifiée */}
-            {plannedTask !== null ? (
-              <div className={styles.calendarRow}>
-                <span className={styles.plannedConfirm}>Vision planifiée ✓</span>
-                <CalendarButton task={plannedTask} />
-              </div>
-            ) : (
-              <>
-                {/* Sélecteur de date */}
-                <div className={styles.datePickerRow}>
-                  <label htmlFor="focus-datetime" className={styles.dateLabel}>
-                    Quand la traiter ?
-                  </label>
-                  <input
-                    id="focus-datetime"
-                    type="datetime-local"
-                    className={styles.datePicker}
-                    value={selectedDate}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => { setSelectedDate(e.target.value); }}
-                  />
-                </div>
-
-                {/* Actions */}
-                <div className={styles.actions}>
-                  <button
-                    type="button"
-                    className={styles.planBtn}
-                    onClick={() => { void handlePlan(); }}
-                    disabled={isPlanning || !selectedDate}
-                  >
-                    {isPlanning ? 'Planification...' : 'Planifier ✦'}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.passBtn}
-                    onClick={() => { void handlePass(); }}
-                    disabled={isPassing}
-                  >
-                    {isPassing ? '...' : 'Passer →'}
-                  </button>
-                </div>
-              </>
-            )}
+    <>
+      <div className={styles.container}>
+        <div className={styles.card}>
+          {/* En-tête */}
+          <div className={styles.header}>
+            <span className={styles.quadrantBadge}>✦ Les Étoiles</span>
+            <span className={styles.counter}>
+              {unplannedStars.length.toString() + ' vision' + (unplannedStars.length > 1 ? 's' : '') + ' à planifier'}
+            </span>
           </div>
-        )}
-      </div>
 
-      <div className={styles.taskInputArea}>
-        <TaskInput onTaskCreated={onTaskCreated} isDesktop />
+          {/* Vision courante */}
+          {currentTask !== null && (
+            <div className={styles.taskCard}>
+              <h1 className={styles.taskTitle}>{currentTask.title}</h1>
+
+              {/* Tags */}
+              {currentTask.tags.length > 0 && (
+                <div className={styles.tagsRow}>
+                  {currentTask.tags.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className={styles.tagBadge}
+                      style={{ borderColor: tag.color, color: tag.color }}
+                    >
+                      {tag.icon} {tag.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Sélecteur de date */}
+              <div className={styles.datePickerRow}>
+                <label htmlFor="focus-datetime" className={styles.dateLabel}>
+                  Quand la traiter ?
+                </label>
+                <input
+                  id="focus-datetime"
+                  type="datetime-local"
+                  className={styles.datePicker}
+                  value={selectedDate}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => { setSelectedDate(e.target.value); }}
+                />
+              </div>
+
+              {/* Actions */}
+              <div className={styles.actions}>
+                <button
+                  type="button"
+                  className={styles.planBtn}
+                  onClick={() => { void handlePlan(); }}
+                  disabled={isPlanning || !selectedDate}
+                >
+                  {isPlanning ? 'Planification...' : 'Planifier ✦'}
+                </button>
+                <button
+                  type="button"
+                  className={styles.passBtn}
+                  onClick={() => { void handlePass(); }}
+                  disabled={isPassing}
+                >
+                  {isPassing ? '...' : 'Passer →'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+      {calendarModal}
+    </>
   );
 }

@@ -6,11 +6,11 @@ interface CalendarButtonProps {
   task: Task;
 }
 
-function toGCalDate(iso: string): string {
+export function toGCalDate(iso: string): string {
   return iso.replace(/[-:]/g, '').replace('.000Z', 'Z').replace(/\.\d{3}Z$/, 'Z');
 }
 
-function buildGoogleCalUrl(task: Task): string {
+export function buildGoogleCalUrl(task: Task): string {
   if (!task.plannedFor) return '';
   const start = toGCalDate(task.plannedFor);
   const endDate = new Date(new Date(task.plannedFor).getTime() + 60 * 60 * 1000);
@@ -21,7 +21,7 @@ function buildGoogleCalUrl(task: Task): string {
     + (task.notes ? '&details=' + encodeURIComponent(task.notes) : '');
 }
 
-function downloadIcal(task: Task): void {
+export function downloadIcal(task: Task): void {
   if (!task.plannedFor) return;
   const start = toGCalDate(task.plannedFor);
   const endDate = new Date(new Date(task.plannedFor).getTime() + 60 * 60 * 1000);

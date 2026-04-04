@@ -36,9 +36,10 @@ interface SortableTaskCardProps {
   onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onUnplan?: (id: string) => Promise<void>;
+  onPlan?: (id: string, date: string) => Promise<void>;
 }
 
-function SortableTaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onUnplan }: SortableTaskCardProps) {
+function SortableTaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onUnplan, onPlan }: SortableTaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
   const wrapperStyle = {
@@ -64,6 +65,7 @@ function SortableTaskCard({ task, allTags, onComplete, onEliminate, onUpdate, on
         onUpdateTags={onUpdateTags}
         onDelete={onDelete}
         {...(onUnplan !== undefined ? { onUnplan } : {})}
+        {...(onPlan !== undefined ? { onPlan } : {})}
       />
     </div>
   );
@@ -80,9 +82,10 @@ interface QuadrantPanelProps {
   onDelete: (id: string) => Promise<void>;
   onReorder: (quadrant: Quadrant, orderedIds: string[]) => Promise<void>;
   onUnplan?: (id: string) => Promise<void>;
+  onPlan?: (id: string, date: string) => Promise<void>;
 }
 
-export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onReorder, onUnplan }: QuadrantPanelProps) {
+export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onReorder, onUnplan, onPlan }: QuadrantPanelProps) {
   const meta = getQuadrantMeta(quadrant);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -168,6 +171,7 @@ export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminat
                   onUpdateTags={onUpdateTags}
                   onDelete={onDelete}
                   {...(onUnplan !== undefined ? { onUnplan } : {})}
+                  {...(onPlan !== undefined ? { onPlan } : {})}
                 />
               ))}
             </SortableContext>
