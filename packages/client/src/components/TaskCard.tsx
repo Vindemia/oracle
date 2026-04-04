@@ -15,11 +15,20 @@ interface TaskCardProps {
   onUpdate: (id: string, data: Partial<Pick<Task, 'urgent' | 'important'>>) => Promise<void>;
   onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onUnplan?: (id: string) => Promise<void>;
 }
 
 const MENU_HEIGHT_EST = 170;
 
-export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete }: TaskCardProps) {
+const plannedFormatter = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onUnplan }: TaskCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -175,6 +184,23 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onU
                 </span>
               ))}
             </div>
+          )}
+          {task.plannedFor !== null && task.quadrant === 'STARS' && (
+            <button
+              type="button"
+              className={styles.plannedBadge}
+              onClick={(e: MouseEvent) => {
+                e.stopPropagation();
+                if (onUnplan) void onUnplan(task.id);
+              }}
+              title="Cliquer pour déplanifier"
+            >
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <rect x="1" y="3" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M5 1v4M11 1v4M1 7h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              {plannedFormatter.format(new Date(task.plannedFor))}
+            </button>
           )}
         </div>
         <div className={styles.actions}>

@@ -21,9 +21,10 @@ interface QuadrantPanelProps {
   onUpdate: (id: string, data: Partial<Pick<Task, 'urgent' | 'important'>>) => Promise<void>;
   onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onUnplan?: (id: string) => Promise<void>;
 }
 
-export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete }: QuadrantPanelProps) {
+export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onUnplan }: QuadrantPanelProps) {
   const meta = getQuadrantMeta(quadrant);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -90,6 +91,7 @@ export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminat
               onUpdate={onUpdate}
               onUpdateTags={onUpdateTags}
               onDelete={onDelete}
+              onUnplan={onUnplan}
             />
           ))
         )}

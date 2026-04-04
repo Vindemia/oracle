@@ -12,6 +12,8 @@ interface UseTasksResult {
   updateTask: (id: string, data: Partial<Pick<Task, 'urgent' | 'important' | 'title'>>) => Promise<void>;
   updateTaskTags: (id: string, newTags: Tag[]) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
+  planTask: (id: string, date: string) => Promise<void>;
+  unplanTask: (id: string) => Promise<void>;
 }
 
 export function useTasks(): UseTasksResult {
@@ -107,5 +109,27 @@ export function useTasks(): UseTasksResult {
     }
   }, [tasks]);
 
-  return { tasks, isLoading, error, refresh: fetchTasks, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask };
+  const planTask = useCallback(async (id: string, date: string) => {
+    const prev = tasks;
+    setTasks((t) => t.map((task) => task.id === id ? { ...task, plannedFor: date } : task));
+    try {
+      await api.post<Task>('/tasks/' + id + '/plan', { plannedFor: date });
+    } catch (err) {
+      setTasks(prev);
+      throw err;
+    }
+  }, [tasks]);
+
+  const unplanTask = useCallback(async (id: string) => {
+    const prev = tasks;
+    setTasks((t) => t.map((task) => task.id === id ? { ...task, plannedFor: null } : task));
+    try {
+      await api.post<Task>('/tasks/' + id + '/unplan', {});
+    } catch (err) {
+      setTasks(prev);
+      throw err;
+    }
+  }, [tasks]);
+
+  return { tasks, isLoading, error, refresh: fetchTasks, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask, planTask, unplanTask };
 }

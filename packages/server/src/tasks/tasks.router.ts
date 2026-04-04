@@ -15,7 +15,12 @@ const taskInclude = {
 type TaskResult = Prisma.TaskGetPayload<{ include: typeof taskInclude }>;
 
 function serialize(task: TaskResult) {
-  return { ...task, tags: task.tags.map((tt) => tt.tag) };
+  return {
+    ...task,
+    tags: task.tags.map((tt) => tt.tag),
+    plannedFor: task.plannedFor?.toISOString() ?? null,
+    notes: task.notes ?? null,
+  };
 }
 
 function calcQuadrant(urgent: boolean, important: boolean): Quadrant {
@@ -44,6 +49,10 @@ const updateSchema = z.object({
   important: z.boolean().optional(),
   status: z.enum(['ACTIVE', 'DONE', 'ELIMINATED']).optional(),
   tagIds: z.array(z.uuid()).optional(),
+});
+
+const planSchema = z.object({
+  plannedFor: z.string().datetime(),
 });
 
 router.get('/', async (req, res) => {
@@ -209,6 +218,56 @@ router.post('/:id/reactivate', async (req, res) => {
     const task = await prisma.task.update({
       where: { id: req.params['id'] },
       data: { status: 'ACTIVE', completedAt: null },
+      include: taskInclude,
+    });
+    res.json(serialize(task));
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/:id/plan', async (req, res) => {
+  const parsed = planSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Validation error', details: parsed.error.issues });
+    return;
+  }
+
+  const plannedDate = new Date(parsed.data.plannedFor);
+  if (plannedDate <= new Date()) {
+    res.status(400).json({ error: 'plannedFor must be in the future' });
+    return;
+  }
+
+  try {
+    const existing = await prisma.task.findUnique({ where: { id: req.params['id'] } });
+    if (!existing || existing.userId !== req.userId) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    const task = await prisma.task.update({
+      where: { id: req.params['id'] },
+      data: { plannedFor: plannedDate },
+      include: taskInclude,
+    });
+    res.json(serialize(task));
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/:id/unplan', async (req, res) => {
+  try {
+    const existing = await prisma.task.findUnique({ where: { id: req.params['id'] } });
+    if (!existing || existing.userId !== req.userId) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    const task = await prisma.task.update({
+      where: { id: req.params['id'] },
+      data: { plannedFor: null },
       include: taskInclude,
     });
     res.json(serialize(task));
