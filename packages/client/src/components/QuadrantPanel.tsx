@@ -1,5 +1,20 @@
 import { useState } from 'react';
 import type { DragEvent } from 'react';
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import type { Tag, Task, Quadrant } from '../types/index.js';
 import { getQuadrantMeta } from '../utils/quadrant.js';
 import { TaskCard } from './TaskCard.js';
@@ -12,6 +27,50 @@ const QUADRANT_FLAGS: Record<Quadrant, { urgent: boolean; important: boolean }> 
   MIST:  { urgent: false, important: false },
 };
 
+interface SortableTaskCardProps {
+  task: Task;
+  allTags: Tag[];
+  onComplete: (id: string) => Promise<void>;
+  onEliminate: (id: string) => Promise<void>;
+  onUpdate: (id: string, data: Partial<Pick<Task, 'urgent' | 'important'>>) => Promise<void>;
+  onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}
+
+function SortableTaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete }: SortableTaskCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
+
+  const wrapperStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={wrapperStyle} className={styles.sortableWrapper}>
+      <span
+        className={[styles.dragHandle, isDragging ? styles.dragHandleActive : undefined].filter(Boolean).join(' ')}
+        aria-label="Réordonner"
+        {...attributes}
+        {...(listeners ?? {})}
+      >
+        ⠿
+      </span>
+      <div className={styles.sortableCard}>
+        <TaskCard
+          task={task}
+          allTags={allTags}
+          onComplete={onComplete}
+          onEliminate={onEliminate}
+          onUpdate={onUpdate}
+          onUpdateTags={onUpdateTags}
+          onDelete={onDelete}
+        />
+      </div>
+    </div>
+  );
+}
+
 interface QuadrantPanelProps {
   quadrant: Quadrant;
   tasks: Task[];
@@ -21,11 +80,16 @@ interface QuadrantPanelProps {
   onUpdate: (id: string, data: Partial<Pick<Task, 'urgent' | 'important'>>) => Promise<void>;
   onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onReorder: (quadrant: Quadrant, orderedIds: string[]) => Promise<void>;
 }
 
-export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete }: QuadrantPanelProps) {
+export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onReorder }: QuadrantPanelProps) {
   const meta = getQuadrantMeta(quadrant);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -49,6 +113,18 @@ export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminat
     const taskId = e.dataTransfer.getData('text/plain');
     if (!taskId) return;
     void onUpdate(taskId, QUADRANT_FLAGS[quadrant]);
+  };
+
+  const handleDndEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = tasks.findIndex((t) => t.id === active.id);
+    const newIndex = tasks.findIndex((t) => t.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(tasks, oldIndex, newIndex);
+    void onReorder(quadrant, reordered.map((t) => t.id));
   };
 
   return (
@@ -80,18 +156,22 @@ export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminat
         {tasks.length === 0 ? (
           <p className={styles.empty}>Aucune vision ici</p>
         ) : (
-          tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              allTags={allTags}
-              onComplete={onComplete}
-              onEliminate={onEliminate}
-              onUpdate={onUpdate}
-              onUpdateTags={onUpdateTags}
-              onDelete={onDelete}
-            />
-          ))
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDndEnd}>
+            <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+              {tasks.map((task) => (
+                <SortableTaskCard
+                  key={task.id}
+                  task={task}
+                  allTags={allTags}
+                  onComplete={onComplete}
+                  onEliminate={onEliminate}
+                  onUpdate={onUpdate}
+                  onUpdateTags={onUpdateTags}
+                  onDelete={onDelete}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         )}
       </div>
     </div>

@@ -11,7 +11,9 @@ vi.mock('../lib/prisma.js', () => ({
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+      aggregate: vi.fn(),
     },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -29,6 +31,7 @@ function mockTask(overrides: Record<string, unknown> = {}) {
     important: false,
     quadrant: 'MIST',
     status: 'ACTIVE',
+    position: 0,
     userId: USER_ID,
     notes: null,
     plannedFor: null,
@@ -47,6 +50,7 @@ beforeEach(() => {
 describe('POST /api/tasks', () => {
   it('urgent=true, important=true → quadrant FIRE', async () => {
     const task = mockTask({ urgent: true, important: true, quadrant: 'FIRE' });
+    vi.mocked(prismaMock.task.aggregate).mockResolvedValue({ _max: { position: null } } as never);
     vi.mocked(prismaMock.task.create).mockResolvedValue(task as never);
 
     const res = await request(app)
@@ -58,13 +62,14 @@ describe('POST /api/tasks', () => {
     expect(res.body.quadrant).toBe('FIRE');
     expect(vi.mocked(prismaMock.task.create)).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ quadrant: 'FIRE' }),
+        data: expect.objectContaining({ quadrant: 'FIRE', position: 0 }),
       }),
     );
   });
 
   it('urgent=false, important=false → quadrant MIST', async () => {
     const task = mockTask({ quadrant: 'MIST' });
+    vi.mocked(prismaMock.task.aggregate).mockResolvedValue({ _max: { position: 2 } } as never);
     vi.mocked(prismaMock.task.create).mockResolvedValue(task as never);
 
     const res = await request(app)
@@ -76,7 +81,7 @@ describe('POST /api/tasks', () => {
     expect(res.body.quadrant).toBe('MIST');
     expect(vi.mocked(prismaMock.task.create)).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ quadrant: 'MIST' }),
+        data: expect.objectContaining({ quadrant: 'MIST', position: 3 }),
       }),
     );
   });
@@ -104,6 +109,7 @@ describe('PATCH /api/tasks/:id', () => {
     const existing = mockTask({ urgent: false, important: true, quadrant: 'STARS' });
     const updated = mockTask({ urgent: true, important: true, quadrant: 'FIRE' });
     vi.mocked(prismaMock.task.findUnique).mockResolvedValue(existing as never);
+    vi.mocked(prismaMock.task.aggregate).mockResolvedValue({ _max: { position: null } } as never);
     vi.mocked(prismaMock.task.update).mockResolvedValue(updated as never);
 
     const res = await request(app)
@@ -251,5 +257,65 @@ describe('DELETE /api/tasks/:id', () => {
 
     expect(res.status).toBe(404);
     expect(prismaMock.task.delete).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/tasks/reorder', () => {
+  const TASK_ID_1 = 'aaaaaaaa-0000-0000-0000-000000000001';
+  const TASK_ID_2 = 'aaaaaaaa-0000-0000-0000-000000000002';
+
+  it('200 avec positions valides', async () => {
+    vi.mocked(prismaMock.task.findMany).mockResolvedValue([
+      { id: TASK_ID_1, userId: USER_ID },
+      { id: TASK_ID_2, userId: USER_ID },
+    ] as never);
+    vi.mocked(prismaMock.$transaction).mockResolvedValue([] as never);
+
+    const res = await request(app)
+      .post('/api/tasks/reorder')
+      .set('Authorization', `Bearer ${token}`)
+      .send([
+        { id: TASK_ID_1, position: 0 },
+        { id: TASK_ID_2, position: 1 },
+      ]);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ success: true });
+  });
+
+  it('403 si une tâche appartient à un autre utilisateur', async () => {
+    vi.mocked(prismaMock.task.findMany).mockResolvedValue([
+      { id: TASK_ID_1, userId: USER_ID },
+      { id: TASK_ID_2, userId: OTHER_USER_ID },
+    ] as never);
+
+    const res = await request(app)
+      .post('/api/tasks/reorder')
+      .set('Authorization', `Bearer ${token}`)
+      .send([
+        { id: TASK_ID_1, position: 0 },
+        { id: TASK_ID_2, position: 1 },
+      ]);
+
+    expect(res.status).toBe(403);
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('400 si body invalide (tableau vide)', async () => {
+    const res = await request(app)
+      .post('/api/tasks/reorder')
+      .set('Authorization', `Bearer ${token}`)
+      .send([]);
+
+    expect(res.status).toBe(400);
+  });
+
+  it('400 si body invalide (position négative)', async () => {
+    const res = await request(app)
+      .post('/api/tasks/reorder')
+      .set('Authorization', `Bearer ${token}`)
+      .send([{ id: TASK_ID_1, position: -1 }]);
+
+    expect(res.status).toBe(400);
   });
 });
