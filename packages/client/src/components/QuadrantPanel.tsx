@@ -48,27 +48,23 @@ function SortableTaskCard({ task, allTags, onComplete, onEliminate, onUpdate, on
   };
 
   return (
-    <div ref={setNodeRef} style={wrapperStyle} className={styles.sortableWrapper}>
-      <span
-        className={[styles.dragHandle, isDragging ? styles.dragHandleActive : undefined].filter(Boolean).join(' ')}
-        aria-label="Réordonner"
-        {...attributes}
-        {...(listeners ?? {})}
-      >
-        ⠿
-      </span>
-      <div className={styles.sortableCard}>
-        <TaskCard
-          task={task}
-          allTags={allTags}
-          onComplete={onComplete}
-          onEliminate={onEliminate}
-          onUpdate={onUpdate}
-          onUpdateTags={onUpdateTags}
-          onDelete={onDelete}
-          {...(onUnplan !== undefined ? { onUnplan } : {})}
-        />
-      </div>
+    <div
+      ref={setNodeRef}
+      style={wrapperStyle}
+      className={[styles.sortableWrapper, isDragging ? styles.draggingWrapper : undefined].filter(Boolean).join(' ')}
+      {...attributes}
+      {...(listeners ?? {})}
+    >
+      <TaskCard
+        task={task}
+        allTags={allTags}
+        onComplete={onComplete}
+        onEliminate={onEliminate}
+        onUpdate={onUpdate}
+        onUpdateTags={onUpdateTags}
+        onDelete={onDelete}
+        {...(onUnplan !== undefined ? { onUnplan } : {})}
+      />
     </div>
   );
 }
