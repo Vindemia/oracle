@@ -28,7 +28,7 @@ function focusTaskInput() {
 }
 
 function FocusRoute() {
-  const { tasks, isLoading, refresh, reorderTasks, planTask } = useTasks();
+  const { tasks, isLoading, refresh, reorderTasks, planTask, completeTask } = useTasks();
   const { tags: allTags } = useTags();
 
   const handlePass = async (id: string) => {
@@ -40,6 +40,15 @@ function FocusRoute() {
     await reorderTasks('STARS', [...without, id]);
   };
 
+  const handlePassFire = async (id: string) => {
+    const fireIds = tasks
+      .filter((t) => t.quadrant === 'FIRE' && t.status === 'ACTIVE')
+      .sort((a, b) => a.position - b.position)
+      .map((t) => t.id);
+    const without = fireIds.filter((fid) => fid !== id);
+    await reorderTasks('FIRE', [...without, id]);
+  };
+
   return (
     <FocusView
       tasks={tasks}
@@ -47,6 +56,8 @@ function FocusRoute() {
       allTags={allTags}
       onPlan={planTask}
       onPass={handlePass}
+      onComplete={completeTask}
+      onPassFire={handlePassFire}
       onTaskCreated={refresh}
     />
   );
