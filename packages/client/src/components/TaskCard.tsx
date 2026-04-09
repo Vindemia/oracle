@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { DragEvent, MouseEvent, TouchEvent } from 'react';
+import type { MouseEvent, TouchEvent } from 'react';
 import type { Tag, Task } from '../types/index.js';
 import { formatRelativeDate } from '../utils/dates.js';
 import { hexToRgba } from '../utils/colors.js';
@@ -48,7 +48,6 @@ function defaultDatetimeLocal(): string {
 export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onUnplan, onPlan }: TaskCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
   const [tagPopoverOpen, setTagPopoverOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState({ top: 0, right: 0 });
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
@@ -66,18 +65,6 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onU
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isMist = task.quadrant === 'MIST';
-
-  const handleDragStart = (e: DragEvent<HTMLDivElement>) => {
-    e.dataTransfer.setData('text/plain', task.id);
-    e.dataTransfer.effectAllowed = 'move';
-    setIsDragging(true);
-    if (longPressTimer.current !== null) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  };
-
-  const handleDragEnd = () => { setIsDragging(false); };
 
   const handleTagBtnClick = () => {
     if (tagPopoverOpen) {
@@ -198,11 +185,8 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onU
   return (
     <div
       ref={cardRef}
-      className={[styles.card, isMist ? styles.mist : undefined, isDragging ? styles.dragging : undefined].filter(Boolean).join(' ')}
+      className={[styles.card, isMist ? styles.mist : undefined].filter(Boolean).join(' ')}
       style={{ borderLeftColor: quadrantColorVar }}
-      draggable
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
       onContextMenu={handleContextMenu}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
