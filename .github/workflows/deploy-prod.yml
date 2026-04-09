@@ -1,16 +1,13 @@
 name: Deploy Production
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag à déployer (ex: v1.2.0)"
-        required: true
-        type: string
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   build-push:
-    name: Build & Push images (${{ inputs.tag }})
+    name: Build & Push images (${{ github.ref_name }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ github.ref }}
 
       - name: Set lowercase owner
         id: owner
@@ -46,7 +43,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ steps.owner.outputs.value }}/oracle-server:latest
-            ghcr.io/${{ steps.owner.outputs.value }}/oracle-server:${{ inputs.tag }}
+            ghcr.io/${{ steps.owner.outputs.value }}/oracle-server:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -61,7 +58,7 @@ jobs:
             VITE_API_URL=${{ secrets.PROD_VITE_API_URL }}
           tags: |
             ghcr.io/${{ steps.owner.outputs.value }}/oracle-client:latest
-            ghcr.io/${{ steps.owner.outputs.value }}/oracle-client:${{ inputs.tag }}
+            ghcr.io/${{ steps.owner.outputs.value }}/oracle-client:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -88,7 +85,7 @@ jobs:
           script: |
             set -e
             cd $HOME/oracle
-            export TAG=${{ inputs.tag }}
+            export TAG=${{ github.ref_name }}
             export DOCKER_REGISTRY=ghcr.io/${{ steps.owner.outputs.value }}
             docker compose -f $HOME/oracle/docker-compose.prod.yml pull
             docker compose -f $HOME/oracle/docker-compose.prod.yml up -d

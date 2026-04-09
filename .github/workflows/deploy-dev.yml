@@ -3,9 +3,13 @@ name: Deploy Dev
 on:
   push:
     branches:
-      - develop
+      - main
     paths-ignore:
       - "**.md"
+
+concurrency:
+  group: deploy-dev-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-push:

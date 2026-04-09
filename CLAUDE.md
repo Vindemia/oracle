@@ -1,118 +1,103 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Projet
 
-## Project Overview
+Oracle — gestion des priorités (matrice d'Eisenhower), thème mystique/céleste. Les tâches sont des "visions", l'historique "Prophéties Accomplies", le bouton d'ajout "Révéler".
 
-Oracle est une application de gestion des priorités basée sur la matrice d'Eisenhower, avec un thème mystique/céleste. Les tâches sont appelées "visions", l'historique "Prophéties Accomplies", et le bouton d'ajout "Révéler".
+Monorepo npm workspaces. Containerisé via Docker Compose (hot reload en dev).
 
-## Architecture
-
-Monorepo npm workspaces avec deux packages :
-
-- `packages/client` — React + TypeScript + Vite + Tailwind CSS
-- `packages/server` — Node.js + Express + TypeScript + Prisma + PostgreSQL
-
-L'ensemble est containerisé via Docker Compose. En développement, les deux packages tournent avec hot reload (HMR côté client, `tsx watch` côté serveur).
-
-## Commands
-
-```bash
-# Développement local (depuis la racine)
-docker compose up           # Lance db + server + client
-docker compose down -v      # Arrêt + suppression des volumes
-
-# Depuis packages/server
-npx prisma migrate dev --name <nom>   # Nouvelle migration
-npx prisma migrate deploy             # Appliquer les migrations (prod)
-npx prisma studio                     # Interface BDD
-npm test                              # Tests serveur
-
-# Depuis packages/client
-npm run dev                 # Dev standalone (sans Docker)
-npm run build               # Build prod
-npm run lint                # Lint
-
-# Depuis la racine
-npm run lint --workspaces   # Lint tous les packages
-npm run build --workspaces  # Build tous les packages
-```
-
-## Stack technique
+## Stack
 
 | Couche | Technologie |
 |--------|-------------|
 | Frontend | React + TypeScript + Vite + Tailwind CSS |
 | Backend | Node.js + Express + TypeScript |
-| ORM | Prisma |
-| Base de données | PostgreSQL 16 |
-| Auth | JWT (access 15min en mémoire + refresh 7j en httpOnly cookie) |
-| Validation | Zod (côté serveur uniquement) |
-| Containerisation | Docker + Docker Compose |
+| ORM | Prisma + PostgreSQL 16 |
+| Auth | JWT (access 15min mémoire + refresh 7j httpOnly cookie) |
+| Validation | Zod (serveur uniquement) |
 | CI/CD | GitHub Actions → ghcr.io |
+
+## Structure
+
+```
+packages/
+├── client/src/
+│   ├── api/client.ts        # HTTP singleton, token mémoire, refresh auto sur 401
+│   ├── components/          # UI réutilisables (AppShell, TaskCard, TagSelector…)
+│   ├── context/             # AuthContext, ToastContext
+│   ├── hooks/               # useTasks, useTags, useAuth — optimistic update + rollback
+│   ├── pages/               # LoginPage, RegisterPage, SettingsPage
+│   ├── types/index.ts       # Task, Tag, Quadrant, TaskStatus, User
+│   ├── utils/               # animations, colors, dates, quadrant
+│   ├── views/               # MatrixView, HistoryView, FocusView
+│   └── index.css            # CSS custom properties du thème (jamais de hex en dur)
+└── server/src/
+    ├── auth/                # middleware, router, service, tests
+    ├── tasks/               # router, tests
+    ├── tags/                # router, tests
+    ├── lib/prisma.ts        # singleton Prisma
+    ├── lib/tags.ts          # taskInclude + serialize()
+    ├── app.ts               # Express app
+    ├── error.middleware.ts  # AppError handler
+    └── index.ts             # entrypoint
+    prisma/
+    ├── schema.prisma
+    ├── seed.ts
+    └── migrations/
+```
 
 ## Schéma de données
 
-Les 4 quadrants (enum `Quadrant`) : `FIRE` (urgent+important), `STARS` (important), `WIND` (urgent), `MIST` (ni l'un ni l'autre). Le champ `quadrant` est **toujours calculé côté serveur** à partir de `urgent` et `important` — ne jamais l'accepter en input client.
+Quadrants (`FIRE` urgent+important, `STARS` important, `WIND` urgent, `MIST` ni l'un ni l'autre) — **toujours calculé côté serveur**, jamais accepté en input client.
 
-Les tâches ont 3 statuts : `ACTIVE`, `DONE`, `ELIMINATED`. Actions disponibles : `complete`, `eliminate`, `reactivate` (chacune via `POST /tasks/:id/<action>`).
+Statuts tâche : `ACTIVE`, `DONE`, `ELIMINATED`. Actions : `POST /tasks/:id/complete|eliminate|reactivate`.
 
-Les tags (`Tag`) ont les champs `name`, `icon`, `color`, `isDefault`, `userId`. Les tags par défaut (`isDefault: true`) sont partagés ; les autres sont propres à l'utilisateur.
+Tags : `name`, `icon`, `color`, `isDefault`, `userId`. Tags `isDefault: true` partagés entre utilisateurs.
 
-Les migrations sont gérées par Prisma (`prisma/migrations/`). Ne jamais modifier manuellement un fichier de migration déjà commité.
+## Patterns serveur
+
+- **`taskInclude` + `serialize()`** : la relation `Task ↔ Tag` passe par `TaskTag`. Toujours utiliser `taskInclude` et `serialize()` — ne jamais retourner le modèle Prisma brut.
+- **`AppError`** : lever `new AppError(message, statusCode)` pour toute erreur métier.
+- Ne jamais modifier manuellement un fichier de migration déjà commité.
 
 ## Auth
 
-- Access token : stocké **en mémoire JS** côté client (jamais localStorage)
-- Refresh token : httpOnly cookie sécurisé, rotation à chaque refresh (l'ancien est invalidé)
-- Le client HTTP (`src/api/client.ts`) gère le refresh automatique en cas de 401
+- Access token : en mémoire JS (jamais localStorage)
+- Refresh token : httpOnly cookie, rotation à chaque refresh
 
-## Thème
+## Convention Git
 
-Les CSS custom properties du thème sont définies dans `packages/client/src/index.css`. Utiliser ces variables pour toute couleur, jamais de valeur hex en dur dans les composants. Fonts : Playfair Display (titres) + Nunito (corps), importées via Google Fonts dans `index.css`.
-
-## Structure client
-
-- `src/views/` — pages composites avec logique métier (`MatrixView`, `HistoryView`)
-- `src/components/` — composants UI réutilisables
-- `src/hooks/` — hooks de données (`useTasks`, `useTags`, `useAuth`) : tous suivent le pattern **optimistic update avec rollback** — l'état local est mis à jour immédiatement, puis rollback sur erreur serveur
-- `src/api/client.ts` — client HTTP singleton ; token en mémoire, `credentials: 'include'` pour les cookies, refresh automatique sur 401
-- `src/types/index.ts` — types partagés (`Task`, `Tag`, `Quadrant`, `TaskStatus`, `User`)
-
-## Composants UI notables
-
-- **`HelpDrawer`** — tiroir d'aide (slide-in) expliquant la matrice d'Eisenhower. Monté via `createPortal` sur `document.body`. Ouvert/fermé depuis le `Header` (bouton `?`). Fermeture via Escape ou clic sur le bouton X.
-- **`HintTooltip`** — tooltip d'aide contextuel wrappant un élément enfant. Affiche des questions guidantes au survol. Utilisé dans `TaskInput` autour des boutons Urgent et Important.
-
-## Pattern serveur : `taskInclude` + `serialize()`
-
-La relation `Task ↔ Tag` passe par une table de jointure `TaskTag`. Tout accès aux tâches doit utiliser `taskInclude` (qui inclut `{ tags: { include: { tag: true } } }`) et la fonction `serialize()` qui aplatit `task.tags[].tag` en tableau de `Tag` avant retour au client. Ne pas retourner le modèle Prisma brut.
-
-## Stratégie de branches
-
-Modèle Git Flow simplifié :
+Trunk-based development — une seule branche long-lived : `main`.
 
 | Branche | Rôle |
 |---------|------|
-| `main` | Production — ne reçoit que des PRs depuis `develop` |
-| `develop` | Intégration — base de toutes les features |
-| `feat/<nom>` | Feature en cours — tirée de `develop`, mergée dans `develop` via PR |
+| `main` | Trunk — reçoit uniquement des PRs depuis `feat/*` ou `fix/*` |
+| `feat/<nom>` | Feature — tirée de `main`, mergée dans `main` via PR |
+| `fix/<nom>` | Correctif — même cycle que les features |
 
-**Règles :**
-- Ne jamais commiter directement sur `main` ou `develop`
-- Chaque feature démarre par `git checkout -b feat/<nom> develop`
-- La PR de mise en production : `develop` → `main`
-- Les noms de feature branches suivent le numéro de spec : `feat/01-monorepo-setup`, `feat/02-auth`, etc.
+Les releases se font en créant un **tag sémantique** sur `main` (ex: `v1.2.0`) — déclenche automatiquement le déploiement en production. Ne jamais commiter directement sur `main`.
 
-## Specs
+## Commandes
 
-Le dossier `specs/` est **ignoré par git** (local only). Les features v1 sont décrites dans `specs/features/v1/`, numérotées `01` à `22` dans l'ordre d'implémentation recommandé. Quand une feature est terminée, renommer le fichier en ajoutant `-done` avant l'extension (ex: `01-feature-monorepo-setup-done.md`).
+```bash
+# Racine
+docker compose up                              # dev (db + server + client)
+docker compose down -v                         # arrêt + suppression volumes
 
-## Post-feature : notes de découvertes
+# packages/server
+npx prisma migrate dev --name <nom>            # nouvelle migration
+npx prisma migrate deploy                      # appliquer migrations (prod)
+npm test                                       # tests serveur
 
-À la fin de chaque feature, **compléter le fichier spec `-done.md`** avec deux sections :
+# packages/client
+npm run dev                                    # dev standalone
+npm run build && npm run lint                  # build + lint
+```
 
-- **`## Fichiers créés/modifiés`** — tableau listant chaque fichier et son action (Créé / Modifié / Supprimé), avec une note si l'action était inattendue
-- **`## Découvertes inattendues`** — tout ce qui a bloqué, surpris ou dévié du plan initial (erreurs d'outils, comportements de libs, pièges de config, breaking changes). Format : titre court + explication + **impact pour les features suivantes**
+## Specs & post-feature
 
-Puis **mettre à jour les mémoires** dans `/home/elrik/.claude/projects/-home-elrik-Repos-oracle/memory/` pour tout ce qui est transversal (pattern de code établi, comportement d'outil confirmé, décision d'architecture). Voir `MEMORY.md` pour l'index.
+`specs/features/v1/` (ignoré par git) — numérotées `01`–`22`. Quand terminée : renommer en `-done.md` et compléter avec :
+- `## Fichiers créés/modifiés` — tableau fichier / action / note
+- `## Découvertes inattendues` — ce qui a bloqué ou surpris + impact pour les features suivantes
+
+Puis mettre à jour les mémoires dans `/home/elrik/.claude/projects/-home-elrik-Repos-oracle/memory/`.
