@@ -10,7 +10,9 @@ vi.mock('../lib/prisma.js', () => ({
       findUnique: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
-      delete: vi.fn(),
+    },
+    taskTag: {
+      deleteMany: vi.fn(),
     },
   },
 }));
@@ -28,6 +30,7 @@ function mockTag(overrides: Record<string, unknown> = {}) {
     icon: '🌙',
     color: '#7c3aed',
     isDefault: false,
+    deletedAt: null,
     createdAt: new Date(),
     userId: USER_ID,
     ...overrides,
@@ -165,17 +168,18 @@ describe('DELETE /api/tags/:id', () => {
   it('supprime le tag et retourne 204 sans supprimer les tâches', async () => {
     const existing = mockTag();
     vi.mocked(prismaMock.tag.findUnique).mockResolvedValue(existing as never);
-    vi.mocked(prismaMock.tag.delete).mockResolvedValue(existing as never);
+    vi.mocked(prismaMock.taskTag.deleteMany).mockResolvedValue({ count: 0 } as never);
+    vi.mocked(prismaMock.tag.update).mockResolvedValue({ ...existing, deletedAt: new Date() } as never);
 
     const res = await request(app)
       .delete('/api/tags/tag-1')
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(204);
-    expect(vi.mocked(prismaMock.tag.delete)).toHaveBeenCalledWith({
-      where: { id: 'tag-1' },
-    });
-    // Les tâches associées ne sont pas supprimées — seul le tag et les TaskTag (cascade DB)
+    // Soft-delete : conserve les associations des visions accomplies/éliminées
+    expect(vi.mocked(prismaMock.tag.update)).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'tag-1' }, data: expect.objectContaining({ deletedAt: expect.any(Date) }) }),
+    );
   });
 
   it('404 si tag d\'un autre utilisateur', async () => {

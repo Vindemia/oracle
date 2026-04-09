@@ -17,7 +17,7 @@ vi.mock('../lib/prisma.js', () => ({
       deleteMany: vi.fn(),
     },
     tag: {
-      createMany: vi.fn(),
+      upsert: vi.fn(),
     },
   },
 }));
@@ -47,7 +47,7 @@ describe('POST /api/auth/register', () => {
       displayName: mockUser.displayName,
       createdAt: mockUser.createdAt,
     } as never);
-    vi.mocked(prismaMock.tag.createMany).mockResolvedValue({ count: 5 });
+    vi.mocked(prismaMock.tag.upsert).mockResolvedValue({} as never);
     vi.mocked(prismaMock.refreshToken.create).mockResolvedValue({} as never);
 
     const res = await request(app).post('/api/auth/register').send({
@@ -73,7 +73,7 @@ describe('POST /api/auth/register', () => {
     });
 
     expect(res.status).toBe(409);
-    expect(res.body.error).toBe('Email already in use');
+    expect(res.body.error).toBe('Cet email est déjà utilisé.');
   });
 
   it('400 si validation échoue (email invalide)', async () => {
@@ -131,7 +131,7 @@ describe('POST /api/auth/login', () => {
     });
 
     expect(res.status).toBe(401);
-    expect(res.body.error).toBe('Invalid credentials');
+    expect(res.body.error).toBe('Email ou mot de passe incorrect.');
   });
 
   it('401 si utilisateur introuvable', async () => {
