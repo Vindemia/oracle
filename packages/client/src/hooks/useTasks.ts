@@ -55,8 +55,8 @@ export function useTasks(): UseTasksResult {
   useEffect(() => {
     const now = Date.now();
     const next = rawTasks
-      .filter((t) => t.plannedFor !== null && new Date(t.plannedFor).getTime() > now)
-      .map((t) => new Date(t.plannedFor!).getTime())
+      .filter((t): t is typeof t & { plannedFor: string } => t.plannedFor !== null && new Date(t.plannedFor).getTime() > now)
+      .map((t) => new Date(t.plannedFor).getTime())
       .sort((a, b) => a - b)[0];
 
     if (!next) return;
