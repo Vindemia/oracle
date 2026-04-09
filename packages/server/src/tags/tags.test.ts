@@ -191,6 +191,6 @@ describe('DELETE /api/tags/:id', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(404);
-    expect(prismaMock.tag.delete).not.toHaveBeenCalled();
+    expect(prismaMock.tag.update).not.toHaveBeenCalled();
   });
 });
