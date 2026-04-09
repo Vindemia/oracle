@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.js';
 import { ToastProvider } from './context/ToastContext.js';
+import { FireAlertProvider, useFireAlert } from './context/FireAlertContext.js';
 import { ProtectedRoute } from './components/ProtectedRoute.js';
 import { AppShell } from './components/AppShell.js';
 import { Header } from './components/Header.js';
@@ -16,10 +18,10 @@ import { useTags } from './hooks/useTags.js';
 
 function AppLayout() {
   return (
-    <>
+    <FireAlertProvider>
       <Header />
       <Outlet />
-    </>
+    </FireAlertProvider>
   );
 }
 
@@ -30,6 +32,11 @@ function focusTaskInput() {
 function FocusRoute() {
   const { tasks, isLoading, refresh, reorderTasks, planTask, completeTask } = useTasks();
   const { tags: allTags } = useTags();
+  const { setHasFireTasks } = useFireAlert();
+
+  useEffect(() => {
+    setHasFireTasks(tasks.some((t) => t.quadrant === 'FIRE' && t.status === 'ACTIVE'));
+  }, [tasks, setHasFireTasks]);
 
   const handlePass = async (id: string) => {
     const starsIds = tasks
@@ -67,6 +74,11 @@ function FocusRoute() {
 function MatrixRoute() {
   const { tasks, isLoading, error, refresh, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask, reorderTasks, unplanTask, planTask } = useTasks();
   const { tags: allTags } = useTags();
+  const { setHasFireTasks } = useFireAlert();
+
+  useEffect(() => {
+    setHasFireTasks(tasks.some((t) => t.quadrant === 'FIRE' && t.status === 'ACTIVE'));
+  }, [tasks, setHasFireTasks]);
   return (
     <AppShell onTaskCreated={refresh}>
       <MatrixView

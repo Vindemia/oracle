@@ -25,6 +25,12 @@ export function useTasks(): UseTasksResult {
   const tasks = useMemo(() => {
     return [...rawTasks].sort((a, b) => {
       if (a.quadrant !== b.quadrant) return 0;
+      // Dans le Brasier : tâches non-planifiées avant les tâches promues (plannedFor non null)
+      if (a.quadrant === 'FIRE') {
+        const aPromoted = a.plannedFor !== null ? 1 : 0;
+        const bPromoted = b.plannedFor !== null ? 1 : 0;
+        if (aPromoted !== bPromoted) return aPromoted - bPromoted;
+      }
       return a.position - b.position;
     });
   }, [rawTasks]);
@@ -44,6 +50,20 @@ export function useTasks(): UseTasksResult {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
+
+  // Déclenche un refresh automatique quand la prochaine tâche planifiée arrive à échéance
+  useEffect(() => {
+    const now = Date.now();
+    const next = rawTasks
+      .filter((t) => t.plannedFor !== null && new Date(t.plannedFor).getTime() > now)
+      .map((t) => new Date(t.plannedFor!).getTime())
+      .sort((a, b) => a - b)[0];
+
+    if (!next) return;
+
+    const timer = setTimeout(fetchTasks, next - now);
+    return () => { clearTimeout(timer); };
+  }, [rawTasks, fetchTasks]);
 
   const completeTask = useCallback(async (id: string) => {
     const prev = rawTasks;

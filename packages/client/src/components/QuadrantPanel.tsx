@@ -1,16 +1,6 @@
-import { useState } from 'react';
-import type { DragEvent } from 'react';
-import {
-  DndContext,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
+import { useDroppable } from '@dnd-kit/core';
 import {
   SortableContext,
-  arrayMove,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
@@ -19,13 +9,6 @@ import type { Tag, Task, Quadrant } from '../types/index.js';
 import { getQuadrantMeta } from '../utils/quadrant.js';
 import { TaskCard } from './TaskCard.js';
 import styles from './QuadrantPanel.module.css';
-
-const QUADRANT_FLAGS: Record<Quadrant, { urgent: boolean; important: boolean }> = {
-  FIRE:  { urgent: true,  important: true  },
-  STARS: { urgent: false, important: true  },
-  WIND:  { urgent: true,  important: false },
-  MIST:  { urgent: false, important: false },
-};
 
 interface SortableTaskCardProps {
   task: Task;
@@ -80,66 +63,22 @@ interface QuadrantPanelProps {
   onUpdate: (id: string, data: Partial<Pick<Task, 'urgent' | 'important'>>) => Promise<void>;
   onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  onReorder: (quadrant: Quadrant, orderedIds: string[]) => Promise<void>;
   onUnplan?: (id: string) => Promise<void>;
   onPlan?: (id: string, date: string) => Promise<void>;
 }
 
-export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onReorder, onUnplan, onPlan }: QuadrantPanelProps) {
+export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onUnplan, onPlan }: QuadrantPanelProps) {
   const meta = getQuadrantMeta(quadrant);
-  const [isDragOver, setIsDragOver] = useState(false);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-  );
-
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setIsDragOver(false);
-    }
-  };
-
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const taskId = e.dataTransfer.getData('text/plain');
-    if (!taskId) return;
-    void onUpdate(taskId, QUADRANT_FLAGS[quadrant]);
-  };
-
-  const handleDndEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const oldIndex = tasks.findIndex((t) => t.id === active.id);
-    const newIndex = tasks.findIndex((t) => t.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    const reordered = arrayMove(tasks, oldIndex, newIndex);
-    void onReorder(quadrant, reordered.map((t) => t.id));
-  };
+  const { setNodeRef, isOver } = useDroppable({ id: quadrant });
 
   return (
     <div
-      className={[styles.panel, isDragOver ? styles.dragOver : undefined].filter(Boolean).join(' ')}
+      ref={setNodeRef}
+      className={[styles.panel, isOver ? styles.dragOver : undefined].filter(Boolean).join(' ')}
       style={{
         backgroundColor: `var(${meta.bgVar})`,
-        borderColor: isDragOver ? `var(${meta.colorVar})` : `var(${meta.borderVar})`,
+        borderColor: isOver ? `var(${meta.colorVar})` : `var(${meta.borderVar})`,
       }}
-      onDragOver={handleDragOver}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
     >
       <div className={styles.header}>
         <div className={styles.headerLeft}>
@@ -158,24 +97,22 @@ export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminat
         {tasks.length === 0 ? (
           <p className={styles.empty}>Aucune vision ici</p>
         ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDndEnd}>
-            <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-              {tasks.map((task) => (
-                <SortableTaskCard
-                  key={task.id}
-                  task={task}
-                  allTags={allTags}
-                  onComplete={onComplete}
-                  onEliminate={onEliminate}
-                  onUpdate={onUpdate}
-                  onUpdateTags={onUpdateTags}
-                  onDelete={onDelete}
-                  {...(onUnplan !== undefined ? { onUnplan } : {})}
-                  {...(onPlan !== undefined ? { onPlan } : {})}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+          <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            {tasks.map((task) => (
+              <SortableTaskCard
+                key={task.id}
+                task={task}
+                allTags={allTags}
+                onComplete={onComplete}
+                onEliminate={onEliminate}
+                onUpdate={onUpdate}
+                onUpdateTags={onUpdateTags}
+                onDelete={onDelete}
+                {...(onUnplan !== undefined ? { onUnplan } : {})}
+                {...(onPlan !== undefined ? { onPlan } : {})}
+              />
+            ))}
+          </SortableContext>
         )}
       </div>
     </div>
