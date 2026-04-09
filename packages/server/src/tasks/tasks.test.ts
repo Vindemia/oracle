@@ -261,8 +261,8 @@ describe('DELETE /api/tasks/:id', () => {
 });
 
 describe('POST /api/tasks/reorder', () => {
-  const TASK_ID_1 = 'aaaaaaaa-0000-0000-0000-000000000001';
-  const TASK_ID_2 = 'aaaaaaaa-0000-0000-0000-000000000002';
+  const TASK_ID_1 = '00000000-0000-4000-8000-000000000001';
+  const TASK_ID_2 = '00000000-0000-4000-8000-000000000002';
 
   it('200 avec positions valides', async () => {
     vi.mocked(prismaMock.task.findMany).mockResolvedValue([
