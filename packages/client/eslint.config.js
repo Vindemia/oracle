@@ -7,12 +7,28 @@ export default [
   js.configs.recommended,
   {
     files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/sw.ts'],
     languageOptions: {
       parser: tsparser,
       globals: globals.browser,
       parserOptions: {
         project: './tsconfig.json',
         ecmaFeatures: { jsx: true },
+      },
+    },
+    plugins: { '@typescript-eslint': tseslint },
+    rules: {
+      ...tseslint.configs['strict-type-checked'].rules,
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
+  },
+  {
+    files: ['src/sw.ts'],
+    languageOptions: {
+      parser: tsparser,
+      globals: globals.serviceworker,
+      parserOptions: {
+        project: './tsconfig.worker.json',
       },
     },
     plugins: { '@typescript-eslint': tseslint },

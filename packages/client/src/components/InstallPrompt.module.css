@@ -1,0 +1,78 @@
+.banner {
+  position: fixed;
+  top: calc(4rem + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: calc(100% - 2rem);
+  max-width: 26rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--accent-gold);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(201, 168, 76, 0.15);
+  animation: descend 0.4s ease;
+}
+
+@keyframes descend {
+  from { opacity: 0; transform: translate(-50%, -0.75rem); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--accent-gold-light);
+}
+
+.subtitle {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.dismiss {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.4rem 0.5rem;
+}
+
+.dismiss:hover {
+  color: var(--text-secondary);
+}
+
+.install {
+  background-color: var(--accent-gold);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.install:hover {
+  background-color: var(--accent-gold-light);
+}

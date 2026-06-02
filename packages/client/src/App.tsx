@@ -6,6 +6,7 @@ import { FireAlertProvider, useFireAlert } from './context/FireAlertContext.js';
 import { ProtectedRoute } from './components/ProtectedRoute.js';
 import { AppShell } from './components/AppShell.js';
 import { Header } from './components/Header.js';
+import { InstallPrompt } from './components/InstallPrompt.js';
 import { ToastList } from './components/ToastList.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { RegisterPage } from './pages/RegisterPage.js';
@@ -20,6 +21,7 @@ function AppLayout() {
   return (
     <FireAlertProvider>
       <Header />
+      <InstallPrompt />
       <Outlet />
     </FireAlertProvider>
   );
