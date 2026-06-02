@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import {
   DndContext,
   PointerSensor,
+  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -51,6 +52,7 @@ export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEli
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
   );
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
