@@ -16,6 +16,30 @@ model User {
   tasks         Task[]
   tags          Tag[]
   refreshTokens RefreshToken[]
+
+  // Préférences de notifications push (présages)
+  remindersEnabled      Boolean            @default(true)
+  reminderLeadMinutes   Int                @default(15)
+  dailySummaryEnabled   Boolean            @default(true)
+  dailySummaryHour      Int                @default(8)
+  staleRemindersEnabled Boolean            @default(false)
+  staleDays             Int                @default(7)
+  timezone              String             @default("Europe/Paris")
+  lastDailySummaryOn    String?
+  lastStaleRemindersOn  String?
+  pushSubscriptions     PushSubscription[]
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Task {
@@ -27,6 +51,8 @@ model Task {
   status      TaskStatus @default(ACTIVE)
   notes       String?
   plannedFor  DateTime?
+  // Date d'envoi du rappel d'échéance — évite les présages en double
+  reminderSentAt DateTime?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   completedAt DateTime?

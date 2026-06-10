@@ -1,8 +1,7 @@
 /// <reference lib="webworker" />
 
-// Service worker custom (mode injectManifest de vite-plugin-pwa).
-// Lot 1 : precache du shell + stratégies réseau. Les handlers push/notificationclick
-// seront ajoutés au Lot 2 (notifications).
+// Service worker custom (mode injectManifest de vite-plugin-pwa) :
+// precache du shell + stratégies réseau + réception des présages (Web Push).
 
 import {
   precacheAndRoute,
@@ -46,6 +45,55 @@ registerRoute(
   ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
   new StaleWhileRevalidate({ cacheName: 'oracle-fonts' }),
 );
+
+// Présages : affiche la notification depuis le payload JSON envoyé par le serveur.
+interface PushPayload {
+  title?: string;
+  body?: string;
+  url?: string;
+  tag?: string;
+}
+
+self.addEventListener('push', (event: PushEvent) => {
+  let payload: PushPayload = {};
+  try {
+    payload = (event.data?.json() as PushPayload | null) ?? {};
+  } catch {
+    // payload non-JSON — on affiche un présage générique
+  }
+
+  const options: NotificationOptions = {
+    body: payload.body ?? '',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    data: { url: payload.url ?? '/' },
+    ...(payload.tag !== undefined ? { tag: payload.tag } : {}),
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title ?? "L'Oracle murmure…", options),
+  );
+});
+
+// Clic sur un présage : focus d'une fenêtre existante (navigée vers l'URL cible)
+// ou ouverture d'une nouvelle fenêtre.
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
+  event.notification.close();
+  const url = (event.notification.data as { url?: string } | null)?.url ?? '/';
+
+  event.waitUntil(
+    (async () => {
+      const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      const existing = windows[0];
+      if (existing) {
+        await existing.focus();
+        await existing.navigate(url).catch(() => undefined);
+        return;
+      }
+      await self.clients.openWindow(url);
+    })(),
+  );
+});
 
 // Active immédiatement la nouvelle version sans attendre la fermeture des onglets.
 self.addEventListener('message', (event: ExtendableMessageEvent) => {

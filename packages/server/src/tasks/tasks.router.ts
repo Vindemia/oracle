@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import prisma from '../lib/prisma.js';
 import { authMiddleware } from '../auth/auth.middleware.js';
+import { promoteDueTasks } from './promotion.js';
 import type { Prisma, Quadrant } from '@prisma/client';
 
 const router = Router();
@@ -69,33 +70,9 @@ router.get('/', async (req, res) => {
   const { status, quadrant, tagId } = parsed.data;
 
   try {
-    // Promouvoir les tâches planifiées arrivées à échéance vers FIRE
-    const now = new Date();
-    const due = await prisma.task.findMany({
-      where: {
-        userId: req.userId,
-        status: 'ACTIVE',
-        plannedFor: { lte: now },
-        NOT: { quadrant: 'FIRE' },
-      },
-      select: { id: true },
-    });
-
-    if (due.length > 0) {
-      const agg = await prisma.task.aggregate({
-        where: { userId: req.userId, quadrant: 'FIRE', status: 'ACTIVE' },
-        _max: { position: true },
-      });
-      const basePos = (agg._max.position ?? -1) + 1;
-      await prisma.$transaction(
-        due.map(({ id }, i) =>
-          prisma.task.update({
-            where: { id },
-            data: { urgent: true, important: true, quadrant: 'FIRE', position: basePos + i },
-          }),
-        ),
-      );
-    }
+    // Filet paresseux : le scheduler couvre les utilisateurs inactifs,
+    // ce GET garantit une vue à jour sans attendre le prochain tick.
+    await promoteDueTasks(req.userId);
 
     const tasks = await prisma.task.findMany({
       where: {
