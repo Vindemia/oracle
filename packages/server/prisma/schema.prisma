@@ -28,6 +28,9 @@ model User {
   lastDailySummaryOn    String?
   lastStaleRemindersOn  String?
   pushSubscriptions     PushSubscription[]
+
+  // Token opaque d'authentification du flux iCal (les clients agenda ne portent pas de JWT)
+  calendarFeedToken String? @unique
 }
 
 model PushSubscription {
