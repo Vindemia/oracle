@@ -4,6 +4,8 @@ import cookieParser from 'cookie-parser';
 import authRouter from './auth/auth.router.js';
 import tasksRouter from './tasks/tasks.router.js';
 import tagsRouter from './tags/tags.router.js';
+import pushRouter from './push/push.router.js';
+import calendarRouter from './calendar/calendar.router.js';
 import { errorMiddleware } from './error.middleware.js';
 
 const app = express();
@@ -19,6 +21,8 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/tags', tagsRouter);
+app.use('/api/push', pushRouter);
+app.use('/api/calendar', calendarRouter);
 
 // Global error handler — must be registered after all routes
 app.use(errorMiddleware);
