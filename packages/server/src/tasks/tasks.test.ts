@@ -12,6 +12,7 @@ vi.mock('../lib/prisma.js', () => ({
       update: vi.fn(),
       delete: vi.fn(),
       aggregate: vi.fn(),
+      groupBy: vi.fn(),
     },
     $transaction: vi.fn(),
   },
@@ -45,6 +46,9 @@ function mockTask(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // promoteDueTasks() (filet paresseux du GET /tasks) s'appuie sur groupBy ;
+  // par défaut aucune tâche en retard (le test qui l'exerce le mock différemment).
+  vi.mocked(prismaMock.task.groupBy).mockResolvedValue([] as never);
 });
 
 describe('POST /api/tasks', () => {
@@ -359,6 +363,27 @@ describe('POST /api/tasks/:id/plan', () => {
     );
   });
 
+  it('réinitialise reminderSentAt lors de la (re)planification', async () => {
+    const futureDate = new Date(Date.now() + 86400000).toISOString();
+    // Tâche déjà rappelée par le passé, qu'on re-planifie à une nouvelle échéance.
+    const existing = mockTask({ reminderSentAt: new Date('2026-01-01T00:00:00Z') });
+    const updated = mockTask({ plannedFor: new Date(futureDate), reminderSentAt: null });
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(existing as never);
+    vi.mocked(prismaMock.task.update).mockResolvedValue(updated as never);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/plan')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ plannedFor: futureDate });
+
+    expect(res.status).toBe(200);
+    expect(vi.mocked(prismaMock.task.update)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ reminderSentAt: null }),
+      }),
+    );
+  });
+
   it('400 si la date est dans le passé', async () => {
     const pastDate = new Date(Date.now() - 86400000).toISOString();
 
@@ -408,9 +433,12 @@ describe('POST /api/tasks/:id/plan', () => {
 });
 
 describe('POST /api/tasks/:id/unplan', () => {
-  it('retire la date plannedFor', async () => {
-    const existing = mockTask({ plannedFor: new Date('2099-01-01T10:00:00Z') });
-    const updated = mockTask({ plannedFor: null });
+  it('retire la date plannedFor et réinitialise reminderSentAt', async () => {
+    const existing = mockTask({
+      plannedFor: new Date('2099-01-01T10:00:00Z'),
+      reminderSentAt: new Date('2026-01-01T00:00:00Z'),
+    });
+    const updated = mockTask({ plannedFor: null, reminderSentAt: null });
     vi.mocked(prismaMock.task.findUnique).mockResolvedValue(existing as never);
     vi.mocked(prismaMock.task.update).mockResolvedValue(updated as never);
 
@@ -422,7 +450,7 @@ describe('POST /api/tasks/:id/unplan', () => {
     expect(res.body.plannedFor).toBeNull();
     expect(vi.mocked(prismaMock.task.update)).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ plannedFor: null }),
+        data: expect.objectContaining({ plannedFor: null, reminderSentAt: null }),
       }),
     );
   });

@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { api } from '../api/client.js';
+import { api, BASE_URL } from '../api/client.js';
 import styles from './CalendarFeedSettings.module.css';
 
 function buildFeedUrl(token: string): string {
-  const base: string = import.meta.env.VITE_API_URL || '/api';
-  const absolute = base.startsWith('http') ? base : window.location.origin + base;
+  const absolute = BASE_URL.startsWith('http') ? BASE_URL : window.location.origin + BASE_URL;
   const url = absolute + '/calendar/' + token + '.ics';
   // webcal:// déclenche l'abonnement (rafraîchi automatiquement) dans les clients agenda.
   return url.replace(/^https?/, 'webcal');

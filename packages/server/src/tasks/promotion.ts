@@ -26,12 +26,16 @@ export async function promoteDueTasks(userId?: string): Promise<void> {
     byUser.set(task.userId, ids);
   }
 
+  const ownerIds = [...byUser.keys()];
+  const groups = await prisma.task.groupBy({
+    by: ['userId'],
+    where: { userId: { in: ownerIds }, quadrant: 'FIRE', status: 'ACTIVE' },
+    _max: { position: true },
+  });
+  const maxPosByUser = new Map(groups.map((g) => [g.userId, g._max.position ?? -1]));
+
   for (const [ownerId, ids] of byUser) {
-    const agg = await prisma.task.aggregate({
-      where: { userId: ownerId, quadrant: 'FIRE', status: 'ACTIVE' },
-      _max: { position: true },
-    });
-    const basePos = (agg._max.position ?? -1) + 1;
+    const basePos = (maxPosByUser.get(ownerId) ?? -1) + 1;
     await prisma.$transaction(
       ids.map((id, i) =>
         prisma.task.update({

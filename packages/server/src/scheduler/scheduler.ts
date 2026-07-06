@@ -1,21 +1,31 @@
 import prisma from '../lib/prisma.js';
 import { promoteDueTasks } from '../tasks/promotion.js';
 import { isPushConfigured, sendToUser } from '../push/push.service.js';
+import { MAX_LEAD_MINUTES } from '../push/push.router.js';
 
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
 
-// Horizon de requête : le plus grand délai de rappel autorisé (cf. prefsSchema).
-const MAX_LEAD_MINUTES = 1440;
+// Lookback de requête : couvre les rappels dont l'échéance est passée pendant
+// un downtime (arrêt du process, déploiement…) pour ne pas les perdre.
+const LOOKBACK_MINUTES = 10;
 
 interface LocalParts {
   dateKey: string;
   hour: number;
 }
 
+/** Exécute `fn` dans le fuseau demandé, avec repli sur Europe/Paris si invalide. */
+function withTimezoneFallback<T>(timeZone: string, fn: (tz: string) => T): T {
+  try {
+    return fn(timeZone);
+  } catch {
+    return fn('Europe/Paris');
+  }
+}
+
 /** Date (YYYY-MM-DD) et heure locales dans le fuseau de l'utilisateur. */
 function localParts(date: Date, timeZone: string): LocalParts {
-  let fmt: Intl.DateTimeFormat;
   const options = {
     year: 'numeric',
     month: '2-digit',
@@ -23,34 +33,24 @@ function localParts(date: Date, timeZone: string): LocalParts {
     hour: '2-digit',
     hourCycle: 'h23',
   } as const;
-  try {
-    fmt = new Intl.DateTimeFormat('fr-CA', { timeZone, ...options });
-  } catch {
-    fmt = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Paris', ...options });
-  }
-  const parts = fmt.formatToParts(date);
-  const get = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((p) => p.type === type)?.value ?? '00';
-  return {
-    dateKey: `${get('year')}-${get('month')}-${get('day')}`,
-    hour: Number(get('hour')),
-  };
+  return withTimezoneFallback(timeZone, (tz) => {
+    const fmt = new Intl.DateTimeFormat('fr-CA', { timeZone: tz, ...options });
+    const parts = fmt.formatToParts(date);
+    const get = (type: Intl.DateTimeFormatPartTypes) =>
+      parts.find((p) => p.type === type)?.value ?? '00';
+    return {
+      dateKey: `${get('year')}-${get('month')}-${get('day')}`,
+      hour: Number(get('hour')),
+    };
+  });
 }
 
 function localTime(date: Date, timeZone: string): string {
-  try {
-    return new Intl.DateTimeFormat('fr-FR', {
-      timeZone,
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  } catch {
-    return new Intl.DateTimeFormat('fr-FR', {
-      timeZone: 'Europe/Paris',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  }
+  return withTimezoneFallback(timeZone, (tz) =>
+    new Intl.DateTimeFormat('fr-FR', { timeZone: tz, hour: '2-digit', minute: '2-digit' }).format(
+      date,
+    ),
+  );
 }
 
 /**
@@ -60,11 +60,12 @@ function localTime(date: Date, timeZone: string): string {
  */
 export async function tickReminders(now = new Date()): Promise<void> {
   const horizon = new Date(now.getTime() + MAX_LEAD_MINUTES * MINUTE);
+  const lookback = new Date(now.getTime() - LOOKBACK_MINUTES * MINUTE);
   const candidates = await prisma.task.findMany({
     where: {
       status: 'ACTIVE',
       reminderSentAt: null,
-      plannedFor: { gte: now, lte: horizon },
+      plannedFor: { gte: lookback, lte: horizon },
       user: { remindersEnabled: true, pushSubscriptions: { some: {} } },
     },
     select: {
@@ -79,17 +80,25 @@ export async function tickReminders(now = new Date()): Promise<void> {
   for (const task of candidates) {
     if (!task.plannedFor) continue;
     const lead = task.user.reminderLeadMinutes * MINUTE;
-    if (task.plannedFor.getTime() - now.getTime() > lead) continue;
+    const diff = task.plannedFor.getTime() - now.getTime();
+    // Trop loin dans le futur (hors fenêtre de lead) : on ne l'envoie pas
+    // encore. Une échéance déjà passée (diff négatif, rattrapée grâce au
+    // lookback) doit au contraire toujours déclencher l'envoi.
+    if (diff > lead) continue;
+
+    // Claim atomique : n'envoie que si on a été le seul à réussir à marquer
+    // ce rappel comme envoyé (protège contre le double-envoi multi-réplica).
+    const claimed = await prisma.task.updateMany({
+      where: { id: task.id, reminderSentAt: null },
+      data: { reminderSentAt: now },
+    });
+    if (claimed.count === 0) continue;
 
     await sendToUser(task.userId, {
       title: "L'Oracle murmure…",
       body: `La vision « ${task.title} » approche (${localTime(task.plannedFor, task.user.timezone)}).`,
       url: '/',
       tag: `reminder-${task.id}`,
-    });
-    await prisma.task.update({
-      where: { id: task.id },
-      data: { reminderSentAt: now },
     });
   }
 }
@@ -122,19 +131,25 @@ export async function tickDigests(now = new Date()): Promise<void> {
     if (hour < user.dailySummaryHour) continue;
 
     if (user.dailySummaryEnabled && user.lastDailySummaryOn !== dateKey) {
-      await sendDailySummary(user.id, user.timezone, dateKey, now);
-      await prisma.user.update({
-        where: { id: user.id },
+      // Claim atomique avant l'envoi : protège contre le double-envoi si
+      // plusieurs réplicas du scheduler tournent en parallèle.
+      const claimed = await prisma.user.updateMany({
+        where: { id: user.id, NOT: { lastDailySummaryOn: dateKey } },
         data: { lastDailySummaryOn: dateKey },
       });
+      if (claimed.count === 1) {
+        await sendDailySummary(user.id, user.timezone, dateKey, now);
+      }
     }
 
     if (user.staleRemindersEnabled && user.lastStaleRemindersOn !== dateKey) {
-      await sendStaleReminder(user.id, user.staleDays, now);
-      await prisma.user.update({
-        where: { id: user.id },
+      const claimed = await prisma.user.updateMany({
+        where: { id: user.id, NOT: { lastStaleRemindersOn: dateKey } },
         data: { lastStaleRemindersOn: dateKey },
       });
+      if (claimed.count === 1) {
+        await sendStaleReminder(user.id, user.staleDays, now);
+      }
     }
   }
 }
@@ -145,23 +160,24 @@ async function sendDailySummary(
   dateKey: string,
   now: Date,
 ): Promise<void> {
-  const fireCount = await prisma.task.count({
-    where: { userId, status: 'ACTIVE', quadrant: 'FIRE' },
-  });
-
   // Visions planifiées « aujourd'hui » au sens du fuseau de l'utilisateur :
   // fenêtre large en UTC puis filtrage sur la date locale.
-  const planned = await prisma.task.findMany({
-    where: {
-      userId,
-      status: 'ACTIVE',
-      plannedFor: {
-        gte: new Date(now.getTime() - DAY - 2 * 60 * MINUTE),
-        lte: new Date(now.getTime() + DAY + 2 * 60 * MINUTE),
+  const [fireCount, planned] = await Promise.all([
+    prisma.task.count({
+      where: { userId, status: 'ACTIVE', quadrant: 'FIRE' },
+    }),
+    prisma.task.findMany({
+      where: {
+        userId,
+        status: 'ACTIVE',
+        plannedFor: {
+          gte: new Date(now.getTime() - DAY - 2 * 60 * MINUTE),
+          lte: new Date(now.getTime() + DAY + 2 * 60 * MINUTE),
+        },
       },
-    },
-    select: { plannedFor: true },
-  });
+      select: { plannedFor: true },
+    }),
+  ]);
   const plannedToday = planned.filter(
     (t) => t.plannedFor !== null && localParts(t.plannedFor, timeZone).dateKey === dateKey,
   ).length;

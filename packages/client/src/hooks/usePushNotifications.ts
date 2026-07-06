@@ -85,11 +85,13 @@ export function usePushNotifications() {
       });
 
       const json = subscription.toJSON();
-      await api.post('/push/subscribe', { endpoint: json.endpoint, keys: json.keys });
-
-      // Cale le résumé matinal sur le fuseau réel de l'appareil.
+      // Le fuseau horaire n'est appliqué par le serveur que pour le premier
+      // appareil du compte (évite qu'un second appareil dans un autre fuseau
+      // décale le résumé quotidien de tous les appareils).
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const updated = await api.patch<PushPrefs>('/push/prefs', { timezone });
+      await api.post('/push/subscribe', { endpoint: json.endpoint, keys: json.keys, timezone });
+
+      const updated = await api.get<PushPrefs>('/push/prefs');
       setPrefs(updated);
       setIsSubscribed(true);
     } catch {

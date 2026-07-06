@@ -3,22 +3,14 @@ import { z } from 'zod';
 import prisma from '../lib/prisma.js';
 import { authMiddleware } from '../auth/auth.middleware.js';
 import { getVapidPublicKey, isPushConfigured } from './push.service.js';
+import type { Prisma } from '@prisma/client';
 
 const router = Router();
 
 router.use(authMiddleware);
 
-const subscribeSchema = z.object({
-  endpoint: z.url(),
-  keys: z.object({
-    p256dh: z.string().min(1),
-    auth: z.string().min(1),
-  }),
-});
-
-const unsubscribeSchema = z.object({
-  endpoint: z.url(),
-});
+/** Délai de rappel maximal autorisé (cf. prefsSchema et scheduler.tickReminders). */
+export const MAX_LEAD_MINUTES = 1440;
 
 function isValidTimezone(tz: string): boolean {
   try {
@@ -29,9 +21,22 @@ function isValidTimezone(tz: string): boolean {
   }
 }
 
+const subscribeSchema = z.object({
+  endpoint: z.url(),
+  keys: z.object({
+    p256dh: z.string().min(1),
+    auth: z.string().min(1),
+  }),
+  timezone: z.string().refine(isValidTimezone, 'Fuseau horaire invalide').optional(),
+});
+
+const unsubscribeSchema = z.object({
+  endpoint: z.url(),
+});
+
 const prefsSchema = z.object({
   remindersEnabled: z.boolean().optional(),
-  reminderLeadMinutes: z.number().int().min(1).max(1440).optional(),
+  reminderLeadMinutes: z.number().int().min(1).max(MAX_LEAD_MINUTES).optional(),
   dailySummaryEnabled: z.boolean().optional(),
   dailySummaryHour: z.number().int().min(0).max(23).optional(),
   staleRemindersEnabled: z.boolean().optional(),
@@ -64,14 +69,26 @@ router.post('/subscribe', async (req, res) => {
     return;
   }
 
-  const { endpoint, keys } = parsed.data;
+  const { endpoint, keys, timezone } = parsed.data;
 
   try {
+    // Premier appareil ? On le détermine avant l'upsert pour ne pas décaler
+    // l'heure du résumé quotidien si un 2e appareil (autre fuseau) s'abonne
+    // ensuite. Inutile de faire la requête si aucune timezone n'est fournie.
+    const isFirstDevice =
+      timezone !== undefined &&
+      (await prisma.pushSubscription.count({ where: { userId: req.userId } })) === 0;
+
     await prisma.pushSubscription.upsert({
       where: { endpoint },
       update: { userId: req.userId, p256dh: keys.p256dh, auth: keys.auth },
       create: { endpoint, p256dh: keys.p256dh, auth: keys.auth, userId: req.userId },
     });
+
+    if (isFirstDevice) {
+      await prisma.user.update({ where: { id: req.userId }, data: { timezone } });
+    }
+
     res.status(201).json({ success: true });
   } catch {
     res.status(500).json({ error: 'Internal server error' });
@@ -118,28 +135,14 @@ router.patch('/prefs', async (req, res) => {
     return;
   }
 
-  const {
-    remindersEnabled,
-    reminderLeadMinutes,
-    dailySummaryEnabled,
-    dailySummaryHour,
-    staleRemindersEnabled,
-    staleDays,
-    timezone,
-  } = parsed.data;
-
   try {
+    // Zod v4 n'affecte que les clés réellement fournies dans le body ; Prisma
+    // ignore les clés absentes/undefined dans `data`. Le cast est nécessaire
+    // car `exactOptionalPropertyTypes` distingue `key?: T` (Prisma) de
+    // `key?: T | undefined` (type inféré par Zod pour un champ `.optional()`).
     const prefs = await prisma.user.update({
       where: { id: req.userId },
-      data: {
-        ...(remindersEnabled !== undefined ? { remindersEnabled } : {}),
-        ...(reminderLeadMinutes !== undefined ? { reminderLeadMinutes } : {}),
-        ...(dailySummaryEnabled !== undefined ? { dailySummaryEnabled } : {}),
-        ...(dailySummaryHour !== undefined ? { dailySummaryHour } : {}),
-        ...(staleRemindersEnabled !== undefined ? { staleRemindersEnabled } : {}),
-        ...(staleDays !== undefined ? { staleDays } : {}),
-        ...(timezone !== undefined ? { timezone } : {}),
-      },
+      data: parsed.data as Prisma.UserUpdateInput,
       select: prefsSelect,
     });
     res.json(prefs);

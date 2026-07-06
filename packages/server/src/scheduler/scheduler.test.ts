@@ -5,12 +5,14 @@ vi.mock('../lib/prisma.js', () => ({
     task: {
       findMany: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
       count: vi.fn(),
       aggregate: vi.fn(),
     },
     user: {
       findMany: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
     $transaction: vi.fn(),
   },
@@ -65,18 +67,18 @@ describe('tickReminders', () => {
       user: { reminderLeadMinutes: 15, timezone: 'Europe/Paris' },
     };
     vi.mocked(prismaMock.task.findMany).mockResolvedValue([task] as never);
-    vi.mocked(prismaMock.task.update).mockResolvedValue({} as never);
+    vi.mocked(prismaMock.task.updateMany).mockResolvedValue({ count: 1 } as never);
 
     await tickReminders(NOW);
 
+    expect(prismaMock.task.updateMany).toHaveBeenCalledWith({
+      where: { id: 'task-1', reminderSentAt: null },
+      data: { reminderSentAt: NOW },
+    });
     expect(sendToUser).toHaveBeenCalledWith(
       'user-1',
       expect.objectContaining({ tag: 'reminder-task-1' }),
     );
-    expect(prismaMock.task.update).toHaveBeenCalledWith({
-      where: { id: 'task-1' },
-      data: { reminderSentAt: NOW },
-    });
   });
 
   it("n'envoie rien si l'échéance est au-delà du lead de l'utilisateur", async () => {
@@ -92,7 +94,53 @@ describe('tickReminders', () => {
     await tickReminders(NOW);
 
     expect(sendToUser).not.toHaveBeenCalled();
-    expect(prismaMock.task.update).not.toHaveBeenCalled();
+    expect(prismaMock.task.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("envoie le présage pour une échéance passée pendant un downtime (lookback)", async () => {
+    const task = {
+      id: 'task-1',
+      title: 'Vision manquée',
+      plannedFor: new Date(NOW.getTime() - 5 * 60_000),
+      userId: 'user-1',
+      user: { reminderLeadMinutes: 15, timezone: 'Europe/Paris' },
+    };
+    vi.mocked(prismaMock.task.findMany).mockResolvedValue([task] as never);
+    vi.mocked(prismaMock.task.updateMany).mockResolvedValue({ count: 1 } as never);
+
+    await tickReminders(NOW);
+
+    expect(prismaMock.task.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          plannedFor: { gte: new Date(NOW.getTime() - 10 * 60_000), lte: expect.any(Date) },
+        }),
+      }),
+    );
+    expect(sendToUser).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ tag: 'reminder-task-1' }),
+    );
+  });
+
+  it("n'envoie pas si un autre réplica a déjà réclamé le rappel (claim atomique)", async () => {
+    const task = {
+      id: 'task-1',
+      title: 'Consulter les astres',
+      plannedFor: new Date(NOW.getTime() + 10 * 60_000),
+      userId: 'user-1',
+      user: { reminderLeadMinutes: 15, timezone: 'Europe/Paris' },
+    };
+    vi.mocked(prismaMock.task.findMany).mockResolvedValue([task] as never);
+    vi.mocked(prismaMock.task.updateMany).mockResolvedValue({ count: 0 } as never);
+
+    await tickReminders(NOW);
+
+    expect(prismaMock.task.updateMany).toHaveBeenCalledWith({
+      where: { id: 'task-1', reminderSentAt: null },
+      data: { reminderSentAt: NOW },
+    });
+    expect(sendToUser).not.toHaveBeenCalled();
   });
 });
 
@@ -102,18 +150,18 @@ describe('tickDigests — résumé matinal', () => {
     vi.mocked(prismaMock.user.findMany).mockResolvedValue([user] as never);
     vi.mocked(prismaMock.task.count).mockResolvedValue(2 as never);
     vi.mocked(prismaMock.task.findMany).mockResolvedValue([] as never);
-    vi.mocked(prismaMock.user.update).mockResolvedValue({} as never);
+    vi.mocked(prismaMock.user.updateMany).mockResolvedValue({ count: 1 } as never);
 
     await tickDigests(NOW); // 12h heure de Paris en juin → >= 8h
 
+    expect(prismaMock.user.updateMany).toHaveBeenCalledWith({
+      where: { id: 'user-1', NOT: { lastDailySummaryOn: dateKeyParis(NOW) } },
+      data: { lastDailySummaryOn: dateKeyParis(NOW) },
+    });
     expect(sendToUser).toHaveBeenCalledWith(
       'user-1',
       expect.objectContaining({ tag: 'daily-summary' }),
     );
-    expect(prismaMock.user.update).toHaveBeenCalledWith({
-      where: { id: 'user-1' },
-      data: { lastDailySummaryOn: dateKeyParis(NOW) },
-    });
   });
 
   it("n'envoie pas deux fois le même jour (anti-doublon)", async () => {
@@ -126,7 +174,7 @@ describe('tickDigests — résumé matinal', () => {
     await tickDigests(NOW);
 
     expect(sendToUser).not.toHaveBeenCalled();
-    expect(prismaMock.user.update).not.toHaveBeenCalled();
+    expect(prismaMock.user.updateMany).not.toHaveBeenCalled();
   });
 
   it("n'envoie rien avant l'heure locale choisie", async () => {
@@ -143,14 +191,29 @@ describe('tickDigests — résumé matinal', () => {
     vi.mocked(prismaMock.user.findMany).mockResolvedValue([user] as never);
     vi.mocked(prismaMock.task.count).mockResolvedValue(0 as never);
     vi.mocked(prismaMock.task.findMany).mockResolvedValue([] as never);
-    vi.mocked(prismaMock.user.update).mockResolvedValue({} as never);
+    vi.mocked(prismaMock.user.updateMany).mockResolvedValue({ count: 1 } as never);
 
     await tickDigests(NOW);
 
     expect(sendToUser).not.toHaveBeenCalled();
-    expect(prismaMock.user.update).toHaveBeenCalledWith(
+    expect(prismaMock.user.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({ data: { lastDailySummaryOn: dateKeyParis(NOW) } }),
     );
+  });
+
+  it("n'envoie pas si un autre réplica a déjà réclamé le résumé du jour (claim atomique)", async () => {
+    const user = mockUser({ dailySummaryEnabled: true, dailySummaryHour: 8 });
+    vi.mocked(prismaMock.user.findMany).mockResolvedValue([user] as never);
+    vi.mocked(prismaMock.user.updateMany).mockResolvedValue({ count: 0 } as never);
+
+    await tickDigests(NOW);
+
+    expect(prismaMock.user.updateMany).toHaveBeenCalledWith({
+      where: { id: 'user-1', NOT: { lastDailySummaryOn: dateKeyParis(NOW) } },
+      data: { lastDailySummaryOn: dateKeyParis(NOW) },
+    });
+    expect(sendToUser).not.toHaveBeenCalled();
+    expect(prismaMock.task.count).not.toHaveBeenCalled();
   });
 });
 
@@ -159,7 +222,7 @@ describe('tickDigests — relance des négligées', () => {
     const user = mockUser({ staleRemindersEnabled: true, staleDays: 7 });
     vi.mocked(prismaMock.user.findMany).mockResolvedValue([user] as never);
     vi.mocked(prismaMock.task.count).mockResolvedValue(3 as never);
-    vi.mocked(prismaMock.user.update).mockResolvedValue({} as never);
+    vi.mocked(prismaMock.user.updateMany).mockResolvedValue({ count: 1 } as never);
 
     await tickDigests(NOW);
 
@@ -167,8 +230,8 @@ describe('tickDigests — relance des négligées', () => {
       'user-1',
       expect.objectContaining({ tag: 'stale-reminder' }),
     );
-    expect(prismaMock.user.update).toHaveBeenCalledWith({
-      where: { id: 'user-1' },
+    expect(prismaMock.user.updateMany).toHaveBeenCalledWith({
+      where: { id: 'user-1', NOT: { lastStaleRemindersOn: dateKeyParis(NOW) } },
       data: { lastStaleRemindersOn: dateKeyParis(NOW) },
     });
   });
@@ -177,10 +240,25 @@ describe('tickDigests — relance des négligées', () => {
     const user = mockUser({ staleRemindersEnabled: true });
     vi.mocked(prismaMock.user.findMany).mockResolvedValue([user] as never);
     vi.mocked(prismaMock.task.count).mockResolvedValue(0 as never);
-    vi.mocked(prismaMock.user.update).mockResolvedValue({} as never);
+    vi.mocked(prismaMock.user.updateMany).mockResolvedValue({ count: 1 } as never);
 
     await tickDigests(NOW);
 
     expect(sendToUser).not.toHaveBeenCalled();
+  });
+
+  it("n'envoie pas si un autre réplica a déjà réclamé la relance (claim atomique)", async () => {
+    const user = mockUser({ staleRemindersEnabled: true, staleDays: 7 });
+    vi.mocked(prismaMock.user.findMany).mockResolvedValue([user] as never);
+    vi.mocked(prismaMock.user.updateMany).mockResolvedValue({ count: 0 } as never);
+
+    await tickDigests(NOW);
+
+    expect(prismaMock.user.updateMany).toHaveBeenCalledWith({
+      where: { id: 'user-1', NOT: { lastStaleRemindersOn: dateKeyParis(NOW) } },
+      data: { lastStaleRemindersOn: dateKeyParis(NOW) },
+    });
+    expect(sendToUser).not.toHaveBeenCalled();
+    expect(prismaMock.task.count).not.toHaveBeenCalled();
   });
 });
