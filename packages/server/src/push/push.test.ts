@@ -20,6 +20,7 @@ vi.mock('../lib/prisma.js', () => ({
       deleteMany: vi.fn(),
       findMany: vi.fn(),
       delete: vi.fn(),
+      count: vi.fn(),
     },
     user: {
       findUnique: vi.fn(),
@@ -102,6 +103,76 @@ describe('POST /api/push/subscribe', () => {
       .send({ endpoint: 'https://push.example.com/sub/abc' });
 
     expect(res.status).toBe(400);
+  });
+
+  it('400 si timezone invalide', async () => {
+    const res = await request(app)
+      .post('/api/push/subscribe')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        endpoint: 'https://push.example.com/sub/abc',
+        keys: { p256dh: 'a', auth: 'b' },
+        timezone: 'Pas/Un_Fuseau',
+      });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('applique la timezone quand c’est le premier appareil', async () => {
+    vi.mocked(prismaMock.pushSubscription.count).mockResolvedValue(0 as never);
+    vi.mocked(prismaMock.pushSubscription.upsert).mockResolvedValue({} as never);
+    vi.mocked(prismaMock.user.update).mockResolvedValue({} as never);
+
+    const res = await request(app)
+      .post('/api/push/subscribe')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        endpoint: 'https://push.example.com/sub/abc',
+        keys: { p256dh: 'p256dh-key', auth: 'auth-key' },
+        timezone: 'America/New_York',
+      });
+
+    expect(res.status).toBe(201);
+    expect(prismaMock.pushSubscription.count).toHaveBeenCalledWith({
+      where: { userId: USER_ID },
+    });
+    expect(prismaMock.user.update).toHaveBeenCalledWith({
+      where: { id: USER_ID },
+      data: { timezone: 'America/New_York' },
+    });
+  });
+
+  it("n'applique pas la timezone si l'utilisateur a déjà un autre appareil", async () => {
+    vi.mocked(prismaMock.pushSubscription.count).mockResolvedValue(1 as never);
+    vi.mocked(prismaMock.pushSubscription.upsert).mockResolvedValue({} as never);
+
+    const res = await request(app)
+      .post('/api/push/subscribe')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        endpoint: 'https://push.example.com/sub/def',
+        keys: { p256dh: 'p256dh-key', auth: 'auth-key' },
+        timezone: 'America/New_York',
+      });
+
+    expect(res.status).toBe(201);
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it("n'appelle pas count() quand aucune timezone n'est fournie", async () => {
+    vi.mocked(prismaMock.pushSubscription.upsert).mockResolvedValue({} as never);
+
+    const res = await request(app)
+      .post('/api/push/subscribe')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        endpoint: 'https://push.example.com/sub/abc',
+        keys: { p256dh: 'p256dh-key', auth: 'auth-key' },
+      });
+
+    expect(res.status).toBe(201);
+    expect(prismaMock.pushSubscription.count).not.toHaveBeenCalled();
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
   });
 });
 

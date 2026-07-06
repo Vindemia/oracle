@@ -315,7 +315,7 @@ router.post('/:id/plan', async (req, res) => {
 
     const task = await prisma.task.update({
       where: { id: req.params['id'] },
-      data: { plannedFor: plannedDate },
+      data: { plannedFor: plannedDate, reminderSentAt: null },
       include: taskInclude,
     });
     res.json(serialize(task));
@@ -334,7 +334,7 @@ router.post('/:id/unplan', async (req, res) => {
 
     const task = await prisma.task.update({
       where: { id: req.params['id'] },
-      data: { plannedFor: null },
+      data: { plannedFor: null, reminderSentAt: null },
       include: taskInclude,
     });
     res.json(serialize(task));

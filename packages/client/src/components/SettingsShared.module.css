@@ -1,0 +1,67 @@
+/* Styles communs aux sections de la page Réglages (PushSettings, CalendarFeedSettings). */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 2.5rem;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-light));
+  color: var(--bg-primary);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.875rem;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: opacity 200ms ease-out;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btnGhost {
+  padding: 0.375rem 0.625rem;
+  background: none;
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-family: var(--font-body);
+  transition: color 200ms ease-out, background-color 200ms ease-out;
+}
+
+.btnGhost:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.error {
+  color: var(--status-eliminated);
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  background-color: rgba(248, 113, 113, 0.08);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--status-eliminated);
+  margin: 0;
+}

@@ -83,7 +83,7 @@ export function PushSettings() {
                 <select
                   className={styles.select}
                   value={prefs.dailySummaryHour}
-                  disabled={!prefs.dailySummaryEnabled}
+                  disabled={!prefs.dailySummaryEnabled && !prefs.staleRemindersEnabled}
                   onChange={(e) => void updatePrefs({ dailySummaryHour: Number(e.target.value) })}
                 >
                   {HOURS.map((h) => (
@@ -92,6 +92,10 @@ export function PushSettings() {
                     </option>
                   ))}
                 </select>
+                <p className={styles.muted}>
+                  Heure utilisée pour le résumé matinal et pour les relances des visions
+                  négligées.
+                </p>
               </li>
 
               <li className={styles.prefItem}>

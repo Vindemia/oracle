@@ -21,6 +21,16 @@ export function buildGoogleCalUrl(task: Task): string {
     + (task.notes ? '&details=' + encodeURIComponent(task.notes) : '');
 }
 
+// RFC 5545 : échapper backslash, point-virgule, virgule et retours à la ligne.
+// Logique jumelle du port serveur packages/server/src/lib/ical.ts (escapeText).
+function escapeText(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
+}
+
 export function downloadIcal(task: Task): void {
   if (!task.plannedFor) return;
   const start = toGCalDate(task.plannedFor);
@@ -32,10 +42,11 @@ export function downloadIcal(task: Task): void {
     'PRODID:-//Oracle//Oracle//FR',
     'BEGIN:VEVENT',
     'UID:' + task.id + '@oracle',
+    'DTSTAMP:' + start,
     'DTSTART:' + start,
     'DTEND:' + end,
-    'SUMMARY:' + task.title,
-    task.notes ? 'DESCRIPTION:' + task.notes : '',
+    'SUMMARY:' + escapeText(task.title),
+    task.notes ? 'DESCRIPTION:' + escapeText(task.notes) : '',
     'END:VEVENT',
     'END:VCALENDAR',
   ].filter(Boolean);

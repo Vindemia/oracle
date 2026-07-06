@@ -18,6 +18,18 @@ export interface AuthContextValue {
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Purge le cache Workbox des réponses API mises en cache (NetworkFirst, cf. sw.ts) :
+// sur un appareil partagé, sans cela le compte suivant pourrait se voir servir
+// les données en cache du précédent (timeout réseau ou hors-ligne).
+async function purgeApiCache(): Promise<void> {
+  if (!('caches' in window)) return;
+  try {
+    await caches.delete('oracle-api');
+  } catch {
+    // best-effort — l'absence de purge ne doit jamais bloquer le flux auth
+  }
+}
+
 // Singleton : évite deux appels simultanés à /auth/refresh (React StrictMode en dev
 // monte les effets deux fois, ce qui causerait une double rotation du refresh token).
 let pendingRefresh: Promise<{ accessToken: string; user?: User } | null> | null = null;
@@ -66,6 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await api.post<AuthResponse>('/auth/login', { email, password });
     setAccessToken(data.accessToken);
     setUser(data.user);
+    // Défense en profondeur : si l'onglet précédent a été fermé sans logout,
+    // purge d'éventuelles données API en cache appartenant à un autre compte.
+    await purgeApiCache();
   }, []);
 
   const register = useCallback(async (displayName: string, email: string, password: string) => {
@@ -80,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setAccessToken(null);
       setUser(null);
+      await purgeApiCache();
     }
   }, []);
 
