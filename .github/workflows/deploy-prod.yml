@@ -73,6 +73,10 @@ jobs:
         id: owner
         run: echo "value=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
+      - name: Set short sha
+        id: sha
+        run: echo "value=$(echo '${{ github.sha }}' | cut -c1-7)" >> $GITHUB_OUTPUT
+
       - name: SSH deploy
         uses: appleboy/ssh-action@v1
         with:
@@ -85,6 +89,16 @@ jobs:
           script: |
             set -e
             cd $HOME/oracle
+
+            # Filet pré-migration : dump ponctuel de la db avant que le
+            # conteneur server ne lance `prisma migrate deploy` au (re)démarrage.
+            # Non bloquant : si db-backup n'existe pas encore (premier déploiement
+            # après l'ajout de ce service) ou échoue, on log et on continue —
+            # les dumps quotidiens réguliers restent le filet principal.
+            docker compose -f docker-compose.prod.yml exec -T -e BACKUP_NAME=pre-deploy-${{ steps.sha.outputs.value }} db-backup sh /backup.sh once \
+              && echo "[deploy] dump pré-migration OK: pre-deploy-${{ steps.sha.outputs.value }}.dump" \
+              || echo "[deploy] ATTENTION: dump pré-migration impossible (service db-backup absent ou erreur), poursuite du déploiement"
+
             export TAG=${{ github.ref_name }}
             export DOCKER_REGISTRY=ghcr.io/${{ steps.owner.outputs.value }}
             docker compose -f $HOME/oracle/docker-compose.prod.yml pull
