@@ -10,6 +10,8 @@ import { InstallPrompt } from './components/InstallPrompt.js';
 import { ToastList } from './components/ToastList.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { RegisterPage } from './pages/RegisterPage.js';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage.js';
+import { ResetPasswordPage } from './pages/ResetPasswordPage.js';
 import { MatrixView } from './views/MatrixView.js';
 import { SettingsPage } from './pages/SettingsPage.js';
 import { HistoryView } from './views/HistoryView.js';
@@ -111,6 +113,8 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route
               element={
                 <ProtectedRoute>

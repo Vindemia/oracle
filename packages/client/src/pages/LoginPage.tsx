@@ -74,6 +74,10 @@ export function LoginPage() {
         </form>
 
         <p className={styles.switchLink}>
+          <Link to="/forgot-password" className={styles.link}>Mot de passe oublié ?</Link>
+        </p>
+
+        <p className={styles.switchLink}>
           Pas encore initié ?{' '}
           <Link to="/register" className={styles.link}>Rejoindre l'Oracle</Link>
         </p>
