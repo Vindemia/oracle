@@ -2,6 +2,7 @@ import prisma from '../lib/prisma.js';
 import { promoteDueTasks } from '../tasks/promotion.js';
 import { isPushConfigured, sendToUser } from '../push/push.service.js';
 import { MAX_LEAD_MINUTES } from '../push/push.router.js';
+import { tickFeedbackSync } from '../feedback/feedback.sync.js';
 
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
@@ -237,7 +238,12 @@ export function startScheduler(): void {
   setInterval(() => {
     runSafe(tickDigests);
   }, 10 * MINUTE);
+  setInterval(() => {
+    runSafe(tickFeedbackSync);
+  }, 5 * MINUTE);
   // Rattrapage immédiat au démarrage (anti-doublon par date locale).
   runSafe(tickDigests);
-  console.log('[scheduler] Démarré (rappels: 1 min, présages quotidiens: 10 min)');
+  console.log(
+    '[scheduler] Démarré (rappels: 1 min, présages quotidiens: 10 min, échos GitHub: 5 min)',
+  );
 }

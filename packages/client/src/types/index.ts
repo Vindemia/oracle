@@ -36,3 +36,16 @@ export interface Task {
   plannedFor: string | null;
   notes: string | null;
 }
+
+export type FeedbackKind = 'PRAISE' | 'IDEA' | 'BUG';
+
+export interface Feedback {
+  id: string;
+  kind: FeedbackKind;
+  message: string;
+  context: Record<string, unknown>;
+  githubIssueUrl: string | null;
+  syncedAt: string | null;
+  createdAt: string;
+  userId: string;
+}
