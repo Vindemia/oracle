@@ -14,6 +14,9 @@ vi.mock('../lib/prisma.js', () => ({
       update: vi.fn(),
       updateMany: vi.fn(),
     },
+    passwordResetToken: {
+      deleteMany: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));
@@ -214,6 +217,18 @@ describe('tickDigests — résumé matinal', () => {
     });
     expect(sendToUser).not.toHaveBeenCalled();
     expect(prismaMock.task.count).not.toHaveBeenCalled();
+  });
+});
+
+describe('tickDigests — purge des tokens de reset', () => {
+  it('purge les tokens de réinitialisation de mot de passe expirés', async () => {
+    vi.mocked(prismaMock.user.findMany).mockResolvedValue([] as never);
+
+    await tickDigests(NOW);
+
+    expect(prismaMock.passwordResetToken.deleteMany).toHaveBeenCalledWith({
+      where: { expiresAt: { lt: NOW } },
+    });
   });
 });
 

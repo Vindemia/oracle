@@ -3,6 +3,7 @@ import { promoteDueTasks } from '../tasks/promotion.js';
 import { isPushConfigured, sendToUser } from '../push/push.service.js';
 import { MAX_LEAD_MINUTES } from '../push/push.router.js';
 import { tickFeedbackSync } from '../feedback/feedback.sync.js';
+import { purgeExpiredPasswordResetTokens } from '../auth/auth.service.js';
 
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
@@ -110,6 +111,11 @@ export async function tickReminders(now = new Date()): Promise<void> {
  * `dailySummaryHour`.
  */
 export async function tickDigests(now = new Date()): Promise<void> {
+  // Purge des tokens de réinitialisation de mot de passe expirés — sans
+  // impact sur la logique de résumé quotidien ci-dessous, greffée ici pour
+  // réutiliser le tick quotidien existant plutôt que d'en ajouter un.
+  await purgeExpiredPasswordResetTokens(prisma, now);
+
   const users = await prisma.user.findMany({
     where: {
       pushSubscriptions: { some: {} },
