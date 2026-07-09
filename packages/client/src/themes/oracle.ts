@@ -79,6 +79,10 @@ export const oracleTheme: Theme = {
     feedback: 'écho',
     feedbackTitle: 'Écho — dis-nous ce que tu penses',
 
+    whisperPlaceholder: "Murmure à l'Oracle…",
+    whisperCaptured: 'Murmure recueilli',
+    whisperDismiss: 'Rendre à la brume',
+
     morningRitual: "Rituel de l'Aube",
     progress: 'Constellation',
     weeklyReview: 'Conseil des Astres',

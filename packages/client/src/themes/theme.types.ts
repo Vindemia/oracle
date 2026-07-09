@@ -31,6 +31,10 @@ export type TermKey =
   | 'welcomeSubtitle'
   | 'feedback'
   | 'feedbackTitle'
+  // Murmures (v3-02) — capture instantanée triée au Rituel de l'Aube
+  | 'whisperPlaceholder'
+  | 'whisperCaptured'
+  | 'whisperDismiss'
   // Rituels & fonctionnalités à venir dans le chantier v3 (posées ici pour
   // que les features suivantes n'aient pas à créer leur propre lexique)
   | 'morningRitual'
