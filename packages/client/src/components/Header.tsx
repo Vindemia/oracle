@@ -1,9 +1,10 @@
-import { ScrollIcon, GearIcon, SignOutIcon, QuestionIcon } from '@phosphor-icons/react';
+import { ScrollIcon, GearIcon, SignOutIcon, QuestionIcon, FeatherIcon } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useFireAlert } from '../context/FireAlertContext.js';
 import { HelpDrawer } from './HelpDrawer.js';
+import { FeedbackOverlay } from './FeedbackOverlay.js';
 import styles from './Header.module.css';
 
 export function Header() {
@@ -12,6 +13,7 @@ export function Header() {
   const { logout } = useAuth();
   const { hasFireTasks } = useFireAlert();
   const [helpOpen, setHelpOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const isFocus = location.pathname === '/focus';
 
@@ -76,6 +78,14 @@ export function Header() {
               <QuestionIcon size={20} weight={helpOpen ? 'duotone' : 'regular'} />
             </button>
             <button
+              className={[styles.iconBtn, feedbackOpen ? styles.active : null].filter(Boolean).join(' ')}
+              onClick={() => { setFeedbackOpen(true); }}
+              aria-label="Envoyer un écho"
+              title="Écho — dis-nous ce que tu penses"
+            >
+              <FeatherIcon size={20} weight={feedbackOpen ? 'duotone' : 'regular'} />
+            </button>
+            <button
               className={styles.iconBtn}
               onClick={() => { void logout(); }}
               aria-label="Se déconnecter"
@@ -87,6 +97,7 @@ export function Header() {
         </div>
       </header>
       <HelpDrawer open={helpOpen} onClose={() => { setHelpOpen(false); }} />
+      <FeedbackOverlay open={feedbackOpen} onClose={() => { setFeedbackOpen(false); }} />
     </>
   );
 }
