@@ -8,6 +8,8 @@ export interface User {
   displayName: string;
   createdAt: string;
   updatedAt: string;
+  /** Thème visuel + lexical actif — cf. packages/client/src/themes/. */
+  themeId: string;
 }
 
 export interface Tag {
