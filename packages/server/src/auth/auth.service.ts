@@ -62,7 +62,9 @@ export async function register(
   const hashed = await bcrypt.hash(password, 12);
   const user = await prisma.user.create({
     data: { email, password: hashed, displayName },
-    select: { id: true, email: true, displayName: true, createdAt: true },
+    // themeId : pas de valeur fournie → colonne DEFAULT('neutral') appliquée
+    // (cf. schema.prisma) — les nouveaux comptes naissent en thème neutre.
+    select: { id: true, email: true, displayName: true, createdAt: true, themeId: true },
   });
 
   await seedUserTags(prisma, user.id);
@@ -107,6 +109,7 @@ export async function login(prisma: PrismaClient, email: string, password: strin
     displayName: user.displayName,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    themeId: user.themeId,
   };
   return { user: safeUser, accessToken, refreshToken };
 }
@@ -139,7 +142,7 @@ export async function refresh(prisma: PrismaClient, token: string) {
 
   const user = await prisma.user.findUnique({
     where: { id: payload.sub },
-    select: { id: true, email: true, displayName: true, createdAt: true },
+    select: { id: true, email: true, displayName: true, createdAt: true, themeId: true },
   });
 
   return { accessToken, refreshToken: newRefreshToken, user };
