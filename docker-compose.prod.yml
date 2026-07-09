@@ -41,5 +41,26 @@ services:
     ports:
       - "${CLIENT_PORT:-4301}:80"
 
+  db-backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: oracle
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: oracle
+      PGHOST: db
+      BACKUP_KEEP: 14
+      BACKUP_HOUR: 3
+      RCLONE_REMOTE: ${RCLONE_REMOTE:-}
+      RCLONE_KEEP: ${RCLONE_KEEP:-30}
+    volumes:
+      - backups:/backups
+      - ./scripts/backup.sh:/backup.sh:ro
+    entrypoint: ["sh", "/backup.sh"]
+
 volumes:
   db_data:
+  backups:
