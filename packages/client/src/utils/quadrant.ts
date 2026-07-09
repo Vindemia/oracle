@@ -1,4 +1,5 @@
 import type { Quadrant } from '@/types';
+import type { TermKey } from '../themes/index.js';
 
 export function getQuadrant(urgent: boolean, important: boolean): Quadrant {
   if (urgent && important) return 'FIRE';
@@ -53,6 +54,18 @@ const QUADRANT_META: Record<Quadrant, QuadrantMeta> = {
 
 export function getQuadrantLabel(quadrant: Quadrant): string {
   return QUADRANT_META[quadrant].label;
+}
+
+const QUADRANT_TERM_KEYS: Record<Quadrant, TermKey> = {
+  FIRE: 'quadrantFireLabel',
+  STARS: 'quadrantStarsLabel',
+  WIND: 'quadrantWindLabel',
+  MIST: 'quadrantMistLabel',
+};
+
+/** Clé de lexique du libellé thémable d'un quadrant — préférer à `getQuadrantLabel` (figé sur "oracle") dans l'UI. */
+export function getQuadrantTermKey(quadrant: Quadrant): TermKey {
+  return QUADRANT_TERM_KEYS[quadrant];
 }
 
 export function getQuadrantDescription(quadrant: Quadrant): string {

@@ -2,6 +2,7 @@ import { LightningIcon, StarIcon, TagIcon, SparkleIcon, CircleNotchIcon } from '
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { api } from '../api/client.js';
 import { useTags } from '../hooks/useTags.js';
+import { useTheme } from '../context/ThemeContext.js';
 import { HintTooltip } from './HintTooltip.js';
 import { TagSelector } from './TagSelector.js';
 import type { Task } from '../types/index.js';
@@ -14,6 +15,7 @@ interface TaskInputProps {
 
 export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) {
   const { tags } = useTags();
+  const { t } = useTheme();
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -205,11 +207,11 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
           type="text"
           data-task-input="true"
           className={styles.input}
-          placeholder="Nouvelle vision..."
+          placeholder={t('newTaskPlaceholder')}
           value={title}
           onChange={(e) => { setTitle(e.target.value); }}
           onKeyDown={handleKeyDown}
-          aria-label="Nouvelle vision"
+          aria-label={t('newTaskAria')}
         />
         {/* Desktop : boutons inline */}
         {isDesktop && toggleButtons}
@@ -218,8 +220,8 @@ export function TaskInput({ onTaskCreated, isDesktop = false }: TaskInputProps) 
           className={styles.submitBtn}
           disabled={!title.trim() || isSubmitting}
           onClick={() => { void createTask(); }}
-          aria-label="Révéler la vision"
-          title="Révéler (Entrée)"
+          aria-label={`${t('addAction')} la ${t('task')}`}
+          title={`${t('addAction')} (Entrée)`}
         >
           {isSubmitting
             ? <CircleNotchIcon size={20} weight="bold" className={styles.spinner} />

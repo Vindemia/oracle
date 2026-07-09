@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useFireAlert } from '../context/FireAlertContext.js';
+import { useTheme } from '../context/ThemeContext.js';
 import { HelpDrawer } from './HelpDrawer.js';
 import { FeedbackOverlay } from './FeedbackOverlay.js';
 import styles from './Header.module.css';
@@ -12,6 +13,7 @@ export function Header() {
   const location = useLocation();
   const { logout } = useAuth();
   const { hasFireTasks } = useFireAlert();
+  const { t } = useTheme();
   const [helpOpen, setHelpOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
@@ -56,8 +58,8 @@ export function Header() {
             <button
               className={[styles.iconBtn, location.pathname === '/history' ? styles.active : null].filter(Boolean).join(' ')}
               onClick={() => { toggle('/history'); }}
-              aria-label="Prophéties Accomplies"
-              title="Prophéties Accomplies"
+              aria-label={t('historyTitle')}
+              title={t('historyTitle')}
             >
               <ScrollIcon size={20} weight={location.pathname === '/history' ? 'duotone' : 'regular'} />
             </button>
@@ -80,8 +82,8 @@ export function Header() {
             <button
               className={[styles.iconBtn, feedbackOpen ? styles.active : null].filter(Boolean).join(' ')}
               onClick={() => { setFeedbackOpen(true); }}
-              aria-label="Envoyer un écho"
-              title="Écho — dis-nous ce que tu penses"
+              aria-label={`Envoyer un ${t('feedback')}`}
+              title={t('feedbackTitle')}
             >
               <FeatherIcon size={20} weight={feedbackOpen ? 'duotone' : 'regular'} />
             </button>

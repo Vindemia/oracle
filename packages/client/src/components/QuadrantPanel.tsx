@@ -6,7 +6,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Tag, Task, Quadrant } from '../types/index.js';
-import { getQuadrantMeta } from '../utils/quadrant.js';
+import { getQuadrantMeta, getQuadrantTermKey } from '../utils/quadrant.js';
+import { useTheme } from '../context/ThemeContext.js';
 import { TaskCard } from './TaskCard.js';
 import styles from './QuadrantPanel.module.css';
 
@@ -69,6 +70,7 @@ interface QuadrantPanelProps {
 
 export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onUnplan, onPlan }: QuadrantPanelProps) {
   const meta = getQuadrantMeta(quadrant);
+  const { theme, t } = useTheme();
   const { setNodeRef, isOver } = useDroppable({ id: quadrant });
 
   return (
@@ -82,10 +84,10 @@ export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminat
     >
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <span className={styles.icon}>{meta.icon}</span>
+          {theme.ornaments && <span className={styles.icon}>{meta.icon}</span>}
           <div>
             <div className={styles.label} style={{ color: `var(${meta.colorVar})` }}>
-              {meta.label}
+              {t(getQuadrantTermKey(quadrant))}
             </div>
             <div className={styles.description}>{meta.description}</div>
           </div>
@@ -95,7 +97,7 @@ export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminat
 
       <div className={styles.taskList}>
         {tasks.length === 0 ? (
-          <p className={styles.empty}>Aucune vision ici</p>
+          <p className={styles.empty}>Aucune {t('task')} ici</p>
         ) : (
           <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
             {tasks.map((task) => (

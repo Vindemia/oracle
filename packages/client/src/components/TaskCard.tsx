@@ -6,6 +6,7 @@ import { formatRelativeDate } from '../utils/dates.js';
 import { hexToRgba } from '../utils/colors.js';
 import { TagSelector } from './TagSelector.js';
 import { buildGoogleCalUrl, downloadIcal } from './CalendarButton.js';
+import { useTheme } from '../context/ThemeContext.js';
 import styles from './TaskCard.module.css';
 
 interface TaskCardProps {
@@ -46,6 +47,7 @@ function defaultDatetimeLocal(): string {
 }
 
 export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onUnplan, onPlan }: TaskCardProps) {
+  const { t } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tagPopoverOpen, setTagPopoverOpen] = useState(false);
@@ -197,7 +199,7 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onU
           className={styles.circle}
           style={{ borderColor: quadrantColorVar }}
           onClick={handleCircleClick}
-          aria-label={isMist ? 'Éliminer' : 'Compléter'}
+          aria-label={isMist ? t('eliminateAction') : 'Compléter'}
         />
         <div className={styles.content}>
           <span className={styles.title}>{task.title}</span>
