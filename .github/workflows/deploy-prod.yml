@@ -122,8 +122,8 @@ jobs:
             VAPID_SUBJECT=${{ secrets.VAPID_SUBJECT }}
             SMTP_URL=${{ secrets.SMTP_URL }}
             MAIL_FROM=${{ secrets.MAIL_FROM }}
-            GITHUB_FEEDBACK_TOKEN=${{ secrets.GITHUB_FEEDBACK_TOKEN }}
-            GITHUB_FEEDBACK_REPO=${{ secrets.GITHUB_FEEDBACK_REPO }}
+            GITHUB_FEEDBACK_TOKEN=${{ secrets.FEEDBACK_GITHUB_TOKEN }}
+            GITHUB_FEEDBACK_REPO=${{ secrets.FEEDBACK_GITHUB_REPO }}
             RCLONE_REMOTE=${{ secrets.RCLONE_REMOTE }}
             RCLONE_KEEP=${{ secrets.RCLONE_KEEP }}
             ENVEOF

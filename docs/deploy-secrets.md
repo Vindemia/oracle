@@ -31,12 +31,12 @@ sous peine de casser la prod (DB_PASSWORD vide, JWT_SECRET vide, etc.).
 | `VAPID_PUBLIC_KEY` | Clé publique push | existant sur le serveur |
 | `VAPID_PRIVATE_KEY` | Clé privée push | existant sur le serveur |
 | `VAPID_SUBJECT` | `mailto:` du push | existant sur le serveur |
-| `SMTP_URL` | URL SMTP (reset mot de passe) | **nouvelle** — absente du serveur, `forgot-password` échoue silencieusement sans elle |
-| `MAIL_FROM` | Expéditeur des emails | **nouvelle** |
-| `GITHUB_FEEDBACK_TOKEN` | PAT fine-grained, scope `issues:write` | **nouvelle** — sans elle, les échos restent en base sans jamais devenir des issues |
-| `GITHUB_FEEDBACK_REPO` | `owner/repo` cible des issues échos | **nouvelle** |
-| `RCLONE_REMOTE` | Remote rclone pour copie hors machine des dumps (optionnel) | **nouvelle** — laisser vide si pas de copie hors machine souhaitée |
-| `RCLONE_KEEP` | Nombre de dumps conservés côté remote (défaut 30) | **nouvelle** |
+| `SMTP_URL` | URL SMTP (reset mot de passe) | **nouvelle, optionnelle** — laisser vide tant qu'il n'y a pas de fournisseur SMTP ; `forgot-password` dégrade proprement sans elle (log console en dev, pas de 500 en prod) |
+| `MAIL_FROM` | Expéditeur des emails | **nouvelle, optionnelle** — idem `SMTP_URL` |
+| `FEEDBACK_GITHUB_TOKEN` | PAT fine-grained, scope `issues:write`. **Nom du secret différent de la variable d'env** (`GITHUB_FEEDBACK_TOKEN` dans le `.env`) : GitHub interdit tout secret préfixé `GITHUB_` | **nouvelle** — sans elle, les échos restent en base sans jamais devenir des issues |
+| `FEEDBACK_GITHUB_REPO` | `owner/repo` cible des issues échos (`Vindemia/oracle`). Idem, nom de secret ≠ nom de variable d'env (`GITHUB_FEEDBACK_REPO`) | **nouvelle** |
+| `RCLONE_REMOTE` | Remote rclone pour copie hors machine des dumps (optionnel) | **nouvelle, optionnelle** — laisser vide si pas de copie hors machine souhaitée |
+| `RCLONE_KEEP` | Nombre de dumps conservés côté remote (défaut 30) | **nouvelle, optionnelle** |
 
 Les valeurs actuelles des variables "existant sur le serveur" peuvent être lues via :
 ```bash
