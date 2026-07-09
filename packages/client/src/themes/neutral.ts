@@ -81,6 +81,10 @@ export const neutralTheme: Theme = {
     feedback: 'retour',
     feedbackTitle: 'Retour — dis-nous ce que tu penses',
 
+    whisperPlaceholder: 'Note rapide…',
+    whisperCaptured: 'Note enregistrée',
+    whisperDismiss: 'Supprimer',
+
     morningRitual: 'rituel du matin',
     progress: 'progression',
     weeklyReview: 'bilan de la semaine',

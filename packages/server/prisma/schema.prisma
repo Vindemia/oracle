@@ -18,6 +18,7 @@ model User {
   refreshTokens RefreshToken[]
   feedbacks     Feedback[]
   passwordResetTokens PasswordResetToken[]
+  whispers      Whisper[]
 
   // Préférences de notifications push (présages)
   remindersEnabled      Boolean            @default(true)
@@ -126,6 +127,16 @@ model Feedback {
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([syncedAt])
+}
+
+model Whisper {
+  id        String   @id @default(uuid())
+  text      String
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model PasswordResetToken {

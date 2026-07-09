@@ -39,6 +39,12 @@ export interface Task {
   notes: string | null;
 }
 
+export interface Whisper {
+  id: string;
+  text: string;
+  createdAt: string;
+}
+
 export type FeedbackKind = 'PRAISE' | 'IDEA' | 'BUG';
 
 export interface Feedback {
