@@ -11,6 +11,7 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { QuadrantPanel } from '../components/QuadrantPanel.js';
 import { EmptyState } from '../components/EmptyState.js';
+import { useTheme } from '../context/ThemeContext.js';
 import type { Quadrant, Tag, Task } from '../types/index.js';
 import styles from './MatrixView.module.css';
 
@@ -40,6 +41,7 @@ interface MatrixViewProps {
 }
 
 export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onReorder, onUnplan, onPlan, onFocusInput }: MatrixViewProps) {
+  const { theme, t } = useTheme();
   const tasksByQuadrant = useMemo(() => {
     const map: Record<Quadrant, Task[]> = { FIRE: [], STARS: [], WIND: [], MIST: [] };
     for (const task of tasks) {
@@ -112,16 +114,16 @@ export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEli
     return (
       <div className={styles.emptyFull}>
         <EmptyState
-          icon="✦"
-          title="Bienvenue dans ton Oracle"
-          subtitle="Ajoute ta première vision pour clarifier tes priorités."
+          {...(theme.ornaments ? { icon: '✦' } : {})}
+          title={t('welcomeTitle')}
+          subtitle={t('welcomeSubtitle')}
           action={
             <button
               type="button"
               className={styles.firstVisionBtn}
               onClick={onFocusInput}
             >
-              + Ma première vision
+              + Ma première {t('task')}
             </button>
           }
         />

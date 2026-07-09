@@ -22,11 +22,14 @@ export default defineConfig({
       manifest: {
         name: 'Oracle',
         short_name: 'Oracle',
-        description: "Oracle — gestion des priorités, matrice d'Eisenhower mystique.",
+        description: "Oracle — gestion des priorités, matrice d'Eisenhower.",
         lang: 'fr',
         dir: 'ltr',
-        theme_color: '#0d0b1a',
-        background_color: '#0d0b1a',
+        // Thème neutre (défaut) — le manifest PWA est statique, il ne peut pas
+        // suivre le thème choisi par l'utilisateur (limitation assumée, cf.
+        // specs/features/v3/12-themes.md).
+        theme_color: '#faf9f6',
+        background_color: '#faf9f6',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
