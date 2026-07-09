@@ -17,6 +17,7 @@ model User {
   tags          Tag[]
   refreshTokens RefreshToken[]
   feedbacks     Feedback[]
+  passwordResetTokens PasswordResetToken[]
 
   // Préférences de notifications push (présages)
   remindersEnabled      Boolean            @default(true)
@@ -120,6 +121,18 @@ model Feedback {
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([syncedAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 enum Quadrant {

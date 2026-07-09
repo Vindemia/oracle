@@ -25,6 +25,18 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.email(),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  newPassword: z.string().min(8),
+});
+
+// Base publique de l'application, utilisée pour construire le lien de reset.
+const APP_URL = process.env['CORS_ORIGIN'] ?? 'http://localhost:5173';
+
 router.post('/register', async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -98,6 +110,42 @@ router.post('/logout', async (req, res) => {
   }
   res.clearCookie('refreshToken', { path: '/' });
   res.status(204).send();
+});
+
+router.post('/forgot-password', async (req, res) => {
+  const parsed = forgotPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Validation error', details: parsed.error.issues });
+    return;
+  }
+
+  try {
+    await authService.requestPasswordReset(prisma, parsed.data.email, APP_URL);
+  } catch (err) {
+    // Anti-énumération : même en cas d'échec interne (SMTP…), on ne révèle rien.
+    console.error('[auth] Échec de la demande de réinitialisation', err);
+  }
+
+  res.status(204).send();
+});
+
+router.post('/reset-password', async (req, res) => {
+  const parsed = resetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Validation error', details: parsed.error.issues });
+    return;
+  }
+
+  try {
+    await authService.resetPassword(prisma, parsed.data.token, parsed.data.newPassword);
+    res.status(204).send();
+  } catch (err) {
+    if (err instanceof AppError && err.code === 'BAD_REQUEST') {
+      res.status(400).json({ error: err.message });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
 });
 
 export default router;
