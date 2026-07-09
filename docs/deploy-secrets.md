@@ -2,7 +2,7 @@
 
 Depuis `feat/ci-deploy-sync`, les workflows `deploy-prod.yml` et `deploy-dev.yml` écrivent
 le `.env` du serveur **à chaque déploiement**, à partir des secrets définis dans les
-environnements GitHub `production` et `development`. Le fichier `docker-compose.prod.yml`
+environnements GitHub `production` et `develop`. Le fichier `docker-compose.prod.yml`
 (+ `scripts/backup.sh`) est copié depuis le dépôt à chaque déploiement — il n'est plus
 maintenu à la main sur le serveur.
 
@@ -13,11 +13,11 @@ sous peine de casser la prod (DB_PASSWORD vide, JWT_SECRET vide, etc.).
 
 ## Étapes
 
-1. Créer l'environnement `development` dans **Settings → Environments** (l'environnement
+1. Créer l'environnement `develop` dans **Settings → Environments** (l'environnement
    `production` existe déjà).
 2. Pour chaque environnement, ajouter les secrets ci-dessous avec les valeurs **actuelles**
    du `.env` correspondant sur le serveur (`~/oracle/.env` pour `production`,
-   `~/oracle-dev/.env` pour `development`) — ce sont les mêmes valeurs qu'aujourd'hui,
+   `~/oracle-dev/.env` pour `develop`) — ce sont les mêmes valeurs qu'aujourd'hui,
    il n'y a rien à régénérer sauf pour les variables marquées *(nouvelle)*.
 
 | Secret | Description | Statut |
