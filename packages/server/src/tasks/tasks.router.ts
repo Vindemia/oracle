@@ -13,13 +13,13 @@ const reorderSchema = z.array(
   z.object({ id: z.uuid(), position: z.number().int().min(0) }),
 ).min(1);
 
-const taskInclude = {
+export const taskInclude = {
   tags: { include: { tag: true } },
 } as const;
 
-type TaskResult = Prisma.TaskGetPayload<{ include: typeof taskInclude }>;
+export type TaskResult = Prisma.TaskGetPayload<{ include: typeof taskInclude }>;
 
-function serialize(task: TaskResult) {
+export function serialize(task: TaskResult) {
   return {
     ...task,
     tags: task.tags.map((tt) => tt.tag),
@@ -28,7 +28,7 @@ function serialize(task: TaskResult) {
   };
 }
 
-function calcQuadrant(urgent: boolean, important: boolean): Quadrant {
+export function calcQuadrant(urgent: boolean, important: boolean): Quadrant {
   if (urgent && important) return 'FIRE';
   if (!urgent && important) return 'STARS';
   if (urgent && !important) return 'WIND';
