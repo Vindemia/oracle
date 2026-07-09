@@ -69,6 +69,8 @@ jobs:
     environment: production
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Set lowercase owner
         id: owner
         run: echo "value=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
@@ -76,6 +78,56 @@ jobs:
       - name: Set short sha
         id: sha
         run: echo "value=$(echo '${{ github.sha }}' | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Copy compose file & scripts vers le serveur
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: "docker-compose.prod.yml,scripts/backup.sh"
+          target: "oracle"
+          strip_components: 0
+          overwrite: true
+
+      # Réécrit le .env du serveur à chaque déploiement à partir des secrets
+      # de l'environnement GitHub `production` — élimine la dérive entre le
+      # .env maintenu à la main sur le serveur et les variables réellement
+      # attendues par docker-compose.prod.yml (cf. incident VAPID #42).
+      # Heredoc quoté ('ENVEOF') : les secrets sont interpolés par GitHub
+      # Actions AVANT l'envoi du script sur le serveur — le heredoc quoté
+      # empêche toute réinterprétation shell de leur contenu (ex: `$`, `` ` ``).
+      - name: Écrire le .env sur le serveur
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          command_timeout: 1m
+          timeout: 30s
+          script: |
+            set -e
+            umask 077
+            cat > $HOME/oracle/.env <<'ENVEOF'
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+            CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
+            PORT=${{ secrets.PORT }}
+            CLIENT_PORT=${{ secrets.CLIENT_PORT }}
+            VAPID_PUBLIC_KEY=${{ secrets.VAPID_PUBLIC_KEY }}
+            VAPID_PRIVATE_KEY=${{ secrets.VAPID_PRIVATE_KEY }}
+            VAPID_SUBJECT=${{ secrets.VAPID_SUBJECT }}
+            SMTP_URL=${{ secrets.SMTP_URL }}
+            MAIL_FROM=${{ secrets.MAIL_FROM }}
+            GITHUB_FEEDBACK_TOKEN=${{ secrets.GITHUB_FEEDBACK_TOKEN }}
+            GITHUB_FEEDBACK_REPO=${{ secrets.GITHUB_FEEDBACK_REPO }}
+            RCLONE_REMOTE=${{ secrets.RCLONE_REMOTE }}
+            RCLONE_KEEP=${{ secrets.RCLONE_KEEP }}
+            ENVEOF
+            chmod 600 $HOME/oracle/.env
 
       - name: SSH deploy
         uses: appleboy/ssh-action@v1
