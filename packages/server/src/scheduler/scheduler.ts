@@ -4,6 +4,7 @@ import { isPushConfigured, sendToUser } from '../push/push.service.js';
 import { MAX_LEAD_MINUTES } from '../push/push.router.js';
 import { tickFeedbackSync } from '../feedback/feedback.sync.js';
 import { purgeExpiredPasswordResetTokens } from '../auth/auth.service.js';
+import { dailySummaryPush, reminderPush, resolveThemeId, staleReminderPush } from '../lib/lexicon.js';
 
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
@@ -75,7 +76,7 @@ export async function tickReminders(now = new Date()): Promise<void> {
       title: true,
       plannedFor: true,
       userId: true,
-      user: { select: { reminderLeadMinutes: true, timezone: true } },
+      user: { select: { reminderLeadMinutes: true, timezone: true, themeId: true } },
     },
   });
 
@@ -96,9 +97,15 @@ export async function tickReminders(now = new Date()): Promise<void> {
     });
     if (claimed.count === 0) continue;
 
+    const themeId = resolveThemeId(task.user.themeId);
+    const { title, body } = reminderPush(
+      themeId,
+      task.title,
+      localTime(task.plannedFor, task.user.timezone),
+    );
     await sendToUser(task.userId, {
-      title: "L'Oracle murmure…",
-      body: `La vision « ${task.title} » approche (${localTime(task.plannedFor, task.user.timezone)}).`,
+      title,
+      body,
       url: '/',
       tag: `reminder-${task.id}`,
     });
@@ -124,6 +131,7 @@ export async function tickDigests(now = new Date()): Promise<void> {
     select: {
       id: true,
       timezone: true,
+      themeId: true,
       dailySummaryEnabled: true,
       dailySummaryHour: true,
       lastDailySummaryOn: true,
@@ -137,6 +145,8 @@ export async function tickDigests(now = new Date()): Promise<void> {
     const { dateKey, hour } = localParts(now, user.timezone);
     if (hour < user.dailySummaryHour) continue;
 
+    const themeId = resolveThemeId(user.themeId);
+
     if (user.dailySummaryEnabled && user.lastDailySummaryOn !== dateKey) {
       // Claim atomique avant l'envoi : protège contre le double-envoi si
       // plusieurs réplicas du scheduler tournent en parallèle.
@@ -145,7 +155,7 @@ export async function tickDigests(now = new Date()): Promise<void> {
         data: { lastDailySummaryOn: dateKey },
       });
       if (claimed.count === 1) {
-        await sendDailySummary(user.id, user.timezone, dateKey, now);
+        await sendDailySummary(user.id, themeId, user.timezone, dateKey, now);
       }
     }
 
@@ -155,7 +165,7 @@ export async function tickDigests(now = new Date()): Promise<void> {
         data: { lastStaleRemindersOn: dateKey },
       });
       if (claimed.count === 1) {
-        await sendStaleReminder(user.id, user.staleDays, now);
+        await sendStaleReminder(user.id, themeId, user.staleDays, now);
       }
     }
   }
@@ -163,6 +173,7 @@ export async function tickDigests(now = new Date()): Promise<void> {
 
 async function sendDailySummary(
   userId: string,
+  themeId: ReturnType<typeof resolveThemeId>,
   timeZone: string,
   dateKey: string,
   now: Date,
@@ -189,36 +200,34 @@ async function sendDailySummary(
     (t) => t.plannedFor !== null && localParts(t.plannedFor, timeZone).dateKey === dateKey,
   ).length;
 
-  if (fireCount === 0 && plannedToday === 0) return;
-
-  const pieces: string[] = [];
-  if (fireCount > 0) {
-    pieces.push(`${fireCount.toString()} vision${fireCount > 1 ? 's' : ''} dans le Brasier`);
-  }
-  if (plannedToday > 0) {
-    pieces.push(
-      `${plannedToday.toString()} vision${plannedToday > 1 ? 's' : ''} planifiée${plannedToday > 1 ? 's' : ''} aujourd'hui`,
-    );
-  }
+  const content = dailySummaryPush(themeId, { fireCount, plannedToday });
+  if (!content) return;
 
   await sendToUser(userId, {
-    title: 'Les présages du jour',
-    body: pieces.join(' · ') + '.',
+    title: content.title,
+    body: content.body,
     url: '/focus',
     tag: 'daily-summary',
   });
 }
 
-async function sendStaleReminder(userId: string, staleDays: number, now: Date): Promise<void> {
+async function sendStaleReminder(
+  userId: string,
+  themeId: ReturnType<typeof resolveThemeId>,
+  staleDays: number,
+  now: Date,
+): Promise<void> {
   const threshold = new Date(now.getTime() - staleDays * DAY);
   const staleCount = await prisma.task.count({
     where: { userId, status: 'ACTIVE', updatedAt: { lt: threshold } },
   });
-  if (staleCount === 0) return;
+
+  const content = staleReminderPush(themeId, { staleCount, staleDays });
+  if (!content) return;
 
   await sendToUser(userId, {
-    title: 'Des visions sommeillent…',
-    body: `${staleCount.toString()} vision${staleCount > 1 ? 's' : ''} attend${staleCount > 1 ? 'ent' : ''} dans la brume depuis plus de ${staleDays.toString()} jours.`,
+    title: content.title,
+    body: content.body,
     url: '/',
     tag: 'stale-reminder',
   });

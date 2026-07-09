@@ -46,6 +46,7 @@ function mockUser(overrides: Record<string, unknown> = {}) {
   return {
     id: 'user-1',
     timezone: 'Europe/Paris',
+    themeId: 'oracle',
     dailySummaryEnabled: false,
     dailySummaryHour: 8,
     lastDailySummaryOn: null,
@@ -67,7 +68,7 @@ describe('tickReminders', () => {
       title: 'Consulter les astres',
       plannedFor: new Date(NOW.getTime() + 10 * 60_000),
       userId: 'user-1',
-      user: { reminderLeadMinutes: 15, timezone: 'Europe/Paris' },
+      user: { reminderLeadMinutes: 15, timezone: 'Europe/Paris', themeId: 'oracle' },
     };
     vi.mocked(prismaMock.task.findMany).mockResolvedValue([task] as never);
     vi.mocked(prismaMock.task.updateMany).mockResolvedValue({ count: 1 } as never);
@@ -80,7 +81,33 @@ describe('tickReminders', () => {
     });
     expect(sendToUser).toHaveBeenCalledWith(
       'user-1',
-      expect.objectContaining({ tag: 'reminder-task-1' }),
+      expect.objectContaining({
+        tag: 'reminder-task-1',
+        title: "L'Oracle murmure…",
+        body: expect.stringContaining('vision « Consulter les astres »'),
+      }),
+    );
+  });
+
+  it('compose le rappel avec le lexique neutre pour un utilisateur en thème neutral', async () => {
+    const task = {
+      id: 'task-2',
+      title: 'Réviser le budget',
+      plannedFor: new Date(NOW.getTime() + 10 * 60_000),
+      userId: 'user-2',
+      user: { reminderLeadMinutes: 15, timezone: 'Europe/Paris', themeId: 'neutral' },
+    };
+    vi.mocked(prismaMock.task.findMany).mockResolvedValue([task] as never);
+    vi.mocked(prismaMock.task.updateMany).mockResolvedValue({ count: 1 } as never);
+
+    await tickReminders(NOW);
+
+    expect(sendToUser).toHaveBeenCalledWith(
+      'user-2',
+      expect.objectContaining({
+        title: 'Rappel',
+        body: expect.stringContaining('« Réviser le budget »'),
+      }),
     );
   });
 
@@ -163,7 +190,26 @@ describe('tickDigests — résumé matinal', () => {
     });
     expect(sendToUser).toHaveBeenCalledWith(
       'user-1',
-      expect.objectContaining({ tag: 'daily-summary' }),
+      expect.objectContaining({ tag: 'daily-summary', title: 'Les présages du jour' }),
+    );
+  });
+
+  it('utilise le lexique neutre pour un utilisateur en thème neutral', async () => {
+    const user = mockUser({ dailySummaryEnabled: true, dailySummaryHour: 8, themeId: 'neutral' });
+    vi.mocked(prismaMock.user.findMany).mockResolvedValue([user] as never);
+    vi.mocked(prismaMock.task.count).mockResolvedValue(2 as never);
+    vi.mocked(prismaMock.task.findMany).mockResolvedValue([] as never);
+    vi.mocked(prismaMock.user.updateMany).mockResolvedValue({ count: 1 } as never);
+
+    await tickDigests(NOW);
+
+    expect(sendToUser).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({
+        tag: 'daily-summary',
+        title: 'Priorités du jour',
+        body: expect.stringContaining('tâche'),
+      }),
     );
   });
 
@@ -243,12 +289,26 @@ describe('tickDigests — relance des négligées', () => {
 
     expect(sendToUser).toHaveBeenCalledWith(
       'user-1',
-      expect.objectContaining({ tag: 'stale-reminder' }),
+      expect.objectContaining({ tag: 'stale-reminder', title: 'Des visions sommeillent…' }),
     );
     expect(prismaMock.user.updateMany).toHaveBeenCalledWith({
       where: { id: 'user-1', NOT: { lastStaleRemindersOn: dateKeyParis(NOW) } },
       data: { lastStaleRemindersOn: dateKeyParis(NOW) },
     });
+  });
+
+  it('utilise le lexique neutre pour un utilisateur en thème neutral', async () => {
+    const user = mockUser({ staleRemindersEnabled: true, staleDays: 7, themeId: 'neutral' });
+    vi.mocked(prismaMock.user.findMany).mockResolvedValue([user] as never);
+    vi.mocked(prismaMock.task.count).mockResolvedValue(3 as never);
+    vi.mocked(prismaMock.user.updateMany).mockResolvedValue({ count: 1 } as never);
+
+    await tickDigests(NOW);
+
+    expect(sendToUser).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ tag: 'stale-reminder', title: 'Tâches en attente' }),
+    );
   });
 
   it("n'envoie rien si aucune vision négligée", async () => {
