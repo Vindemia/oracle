@@ -5,6 +5,7 @@ import { IconPicker } from '../components/IconPicker.js';
 import { PushSettings } from '../components/PushSettings.js';
 import { CalendarFeedSettings } from '../components/CalendarFeedSettings.js';
 import { FeedbackHistory } from '../components/FeedbackHistory.js';
+import { ThemeSettings } from '../components/ThemeSettings.js';
 import styles from './SettingsPage.module.css';
 
 const DEFAULT_COLORS = ['#8b5cf6', '#ef4444', '#38bdf8', '#4ade80', '#f59e0b', '#ec4899', '#6366f1'];
@@ -196,6 +197,7 @@ export function SettingsPage() {
           {error !== null && <p className={styles.error}>{error}</p>}
         </section>
 
+        <ThemeSettings />
         <PushSettings />
         <CalendarFeedSettings />
         <FeedbackHistory />

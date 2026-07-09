@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import type { Tag, Task } from '../types/index.js';
 import { CalendarButton, buildGoogleCalUrl, downloadIcal } from '../components/CalendarButton.js';
+import { useTheme } from '../context/ThemeContext.js';
+import { getQuadrantTermKey } from '../utils/quadrant.js';
 import styles from './FocusView.module.css';
 
 function getDefaultDatetime(): string {
@@ -26,6 +28,7 @@ interface FocusViewProps {
 
 export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass, onComplete, onPassFire }: FocusViewProps) {
   const navigate = useNavigate();
+  const { theme, t } = useTheme();
   const [selectedDate, setSelectedDate] = useState<string>(getDefaultDatetime());
   const [plannedTask, setPlannedTask] = useState<Task | null>(null);
   const [isPlanning, setIsPlanning] = useState(false);
@@ -251,9 +254,11 @@ export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass,
         <div className={styles.card}>
           {/* En-tête */}
           <div className={styles.header}>
-            <span className={styles.quadrantBadge}>✦ Les Étoiles</span>
+            <span className={styles.quadrantBadge}>
+              {theme.ornaments ? '✦ ' : ''}{t(getQuadrantTermKey('STARS'))}
+            </span>
             <span className={styles.counter}>
-              {unplannedStars.length.toString() + ' vision' + (unplannedStars.length > 1 ? 's' : '') + ' à planifier'}
+              {unplannedStars.length.toString() + ' ' + t('task') + (unplannedStars.length > 1 ? 's' : '') + ' à planifier'}
             </span>
           </div>
 

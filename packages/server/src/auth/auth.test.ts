@@ -9,6 +9,7 @@ vi.mock('../lib/prisma.js', () => ({
     user: {
       findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
     },
     refreshToken: {
       findUnique: vi.fn(),
@@ -32,6 +33,7 @@ const mockUser = {
   displayName: 'Testeur',
   createdAt: new Date(),
   updatedAt: new Date(),
+  themeId: 'neutral',
 };
 
 beforeEach(() => {
@@ -46,6 +48,7 @@ describe('POST /api/auth/register', () => {
       email: mockUser.email,
       displayName: mockUser.displayName,
       createdAt: mockUser.createdAt,
+      themeId: 'neutral',
     } as never);
     vi.mocked(prismaMock.tag.upsert).mockResolvedValue({} as never);
     vi.mocked(prismaMock.refreshToken.create).mockResolvedValue({} as never);
@@ -60,6 +63,8 @@ describe('POST /api/auth/register', () => {
     expect(res.body).toHaveProperty('accessToken');
     expect(res.body).toHaveProperty('refreshToken');
     expect(res.body.user.email).toBe('test@example.com');
+    // Nouveau compte → thème neutre par défaut (cf. schema.prisma @default("neutral"))
+    expect(res.body.user.themeId).toBe('neutral');
     expect(res.headers['set-cookie']).toBeDefined();
   });
 
@@ -115,6 +120,7 @@ describe('POST /api/auth/login', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('accessToken');
     expect(res.body).toHaveProperty('refreshToken');
+    expect(res.body.user.themeId).toBe('neutral');
   });
 
   it('401 avec mauvais mot de passe', async () => {
@@ -205,6 +211,93 @@ describe('POST /api/auth/logout', () => {
   it('204 même sans cookie (idempotent)', async () => {
     const res = await request(app).post('/api/auth/logout');
     expect(res.status).toBe(204);
+  });
+});
+
+describe('GET /api/auth/me', () => {
+  it('401 sans token', async () => {
+    const res = await request(app).get('/api/auth/me');
+    expect(res.status).toBe(401);
+  });
+
+  it('retourne le profil (dont themeId) avec un token valide', async () => {
+    const token = generateAccessToken('user-1');
+    // Reflète le résultat réel de `select: meSelect` (sans `password`) — le
+    // mock ne filtre pas lui-même, contrairement à Prisma.
+    vi.mocked(prismaMock.user.findUnique).mockResolvedValue({
+      id: mockUser.id,
+      email: mockUser.email,
+      displayName: mockUser.displayName,
+      createdAt: mockUser.createdAt,
+      updatedAt: mockUser.updatedAt,
+      themeId: mockUser.themeId,
+    } as never);
+
+    const res = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.themeId).toBe('neutral');
+    expect(res.body).not.toHaveProperty('password');
+  });
+
+  it('404 si utilisateur introuvable', async () => {
+    const token = generateAccessToken('user-1');
+    vi.mocked(prismaMock.user.findUnique).mockResolvedValue(null);
+
+    const res = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('PATCH /api/auth/me', () => {
+  it('401 sans token', async () => {
+    const res = await request(app).patch('/api/auth/me').send({ themeId: 'oracle' });
+    expect(res.status).toBe(401);
+  });
+
+  it('met à jour le themeId', async () => {
+    const token = generateAccessToken('user-1');
+    vi.mocked(prismaMock.user.update).mockResolvedValue({
+      ...mockUser,
+      themeId: 'oracle',
+    } as never);
+
+    const res = await request(app)
+      .patch('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ themeId: 'oracle' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.themeId).toBe('oracle');
+    expect(prismaMock.user.update).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: { themeId: 'oracle' },
+      select: expect.objectContaining({ themeId: true }),
+    });
+  });
+
+  it('400 si themeId inconnu', async () => {
+    const token = generateAccessToken('user-1');
+
+    const res = await request(app)
+      .patch('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ themeId: 'galactic' });
+
+    expect(res.status).toBe(400);
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it('400 si themeId manquant', async () => {
+    const token = generateAccessToken('user-1');
+
+    const res = await request(app)
+      .patch('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({});
+
+    expect(res.status).toBe(400);
   });
 });
 

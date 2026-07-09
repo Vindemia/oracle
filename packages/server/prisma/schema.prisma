@@ -33,6 +33,11 @@ model User {
 
   // Token opaque d'authentification du flux iCal (les clients agenda ne portent pas de JWT)
   calendarFeedToken String? @unique
+
+  // Thème visuel + lexical (v3-12) — cf. packages/client/src/themes/ pour les
+  // ids valides. Les comptes créés avant cette migration sont passés à
+  // 'oracle' (aucune surprise visuelle) ; les nouveaux naissent en 'neutral'.
+  themeId String @default("neutral")
 }
 
 model PushSubscription {

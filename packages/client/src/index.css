@@ -1,7 +1,63 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Nunito:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+/*
+ * Tokens de thème — cf. packages/client/src/themes/*.ts pour la source de
+ * vérité JS (utilisée pour les pastilles de prévisualisation en réglages).
+ * `data-theme` est posé sur <html> par ThemeProvider (et par le script
+ * anti-flash dans index.html avant le premier paint).
+ *
+ * Le bloc `:root` de repli DOIT rester déclaré avant les blocs
+ * `[data-theme=...]` : `:root` et `[data-theme='x']` ciblent le même élément
+ * (<html>) avec une spécificité CSS identique (0,1,0) — en cas d'égalité,
+ * c'est l'ordre de déclaration qui tranche. S'il passait après, il
+ * écraserait silencieusement les deux thèmes en permanence (aucun test ne
+ * le détecterait, seul un rendu réel le révèle).
+ */
+
+/* Repli tant que ThemeProvider n'a pas encore posé data-theme (SSR, JS désactivé). */
 :root {
+  --bg-primary: #faf9f6;
+  --bg-secondary: #f2f0ec;
+  --bg-tertiary: #e9e6e0;
+  --bg-surface: #ffffff;
+  --bg-overlay: rgba(250, 249, 246, 0.9);
+  --text-primary: #2a2823;
+  --text-secondary: #6b6862;
+  --text-muted: #96938c;
+  --border-color: #ddd8d0;
+  --border-subtle: #eae7e0;
+  --accent-gold: #3f6d63;
+  --accent-gold-light: #5c8c81;
+  --accent-purple: #3f6d63;
+  --accent-purple-light: #5c8c81;
+  --quadrant-fire: #c0554a;
+  --quadrant-fire-bg: #f7ece9;
+  --quadrant-fire-border: #e0c4bd;
+  --quadrant-stars: #4a5d8c;
+  --quadrant-stars-bg: #ecf0f7;
+  --quadrant-stars-border: #c7d1e5;
+  --quadrant-wind: #a9822f;
+  --quadrant-wind-bg: #f7f1e5;
+  --quadrant-wind-border: #e3d6b8;
+  --quadrant-mist: #7a776f;
+  --quadrant-mist-bg: #f1efeb;
+  --quadrant-mist-border: #ddd9d0;
+  --status-done: #3f7d4f;
+  --status-eliminated: #b6493e;
+  --font-display: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --shadow-sm: 0 1px 2px rgba(20, 18, 14, 0.06);
+  --shadow-md: 0 4px 10px rgba(20, 18, 14, 0.08);
+  --shadow-glow: none;
+}
+
+/* Oracle — univers céleste/mystique (thème d'origine, inchangé). */
+[data-theme='oracle'] {
   /* Backgrounds */
   --bg-primary: #0d0b1a;
   --bg-secondary: #13102a;
@@ -62,6 +118,116 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 20px rgba(139, 92, 246, 0.25);
+}
+
+/* Neutre — thème par défaut, sobre, une seule couleur d'accent, sans ornement. */
+[data-theme='neutral'] {
+  /* Backgrounds */
+  --bg-primary: #faf9f6;
+  --bg-secondary: #f2f0ec;
+  --bg-tertiary: #e9e6e0;
+  --bg-surface: #ffffff;
+  --bg-overlay: rgba(250, 249, 246, 0.9);
+
+  /* Text */
+  --text-primary: #2a2823;
+  --text-secondary: #6b6862;
+  --text-muted: #96938c;
+
+  /* Borders */
+  --border-color: #ddd8d0;
+  --border-subtle: #eae7e0;
+
+  /* Accent — une seule couleur, sobre */
+  --accent-gold: #3f6d63;
+  --accent-gold-light: #5c8c81;
+  --accent-purple: #3f6d63;
+  --accent-purple-light: #5c8c81;
+
+  /* Quadrant : FIRE — urgent + important */
+  --quadrant-fire: #c0554a;
+  --quadrant-fire-bg: #f7ece9;
+  --quadrant-fire-border: #e0c4bd;
+
+  /* Quadrant : STARS — important, non urgent */
+  --quadrant-stars: #4a5d8c;
+  --quadrant-stars-bg: #ecf0f7;
+  --quadrant-stars-border: #c7d1e5;
+
+  /* Quadrant : WIND — urgent, non important */
+  --quadrant-wind: #a9822f;
+  --quadrant-wind-bg: #f7f1e5;
+  --quadrant-wind-border: #e3d6b8;
+
+  /* Quadrant : MIST — ni urgent ni important */
+  --quadrant-mist: #7a776f;
+  --quadrant-mist-bg: #f1efeb;
+  --quadrant-mist-border: #ddd9d0;
+
+  /* Status */
+  --status-done: #3f7d4f;
+  --status-eliminated: #b6493e;
+
+  /* Fonts — système / Inter, pas de police d'affichage distincte */
+  --font-display: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Spacing / radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Shadows — discrètes, pas de halo ornemental */
+  --shadow-sm: 0 1px 2px rgba(20, 18, 14, 0.06);
+  --shadow-md: 0 4px 10px rgba(20, 18, 14, 0.08);
+  --shadow-glow: none;
+}
+
+/* Variante sombre automatique du thème neutre. */
+@media (prefers-color-scheme: dark) {
+  [data-theme='neutral'] {
+    --bg-primary: #1c1a17;
+    --bg-secondary: #232019;
+    --bg-tertiary: #2c2820;
+    --bg-surface: #272420;
+    --bg-overlay: rgba(28, 26, 23, 0.9);
+
+    --text-primary: #ece9e2;
+    --text-secondary: #b3aea3;
+    --text-muted: #7d786e;
+
+    --border-color: #3a352c;
+    --border-subtle: #2c2820;
+
+    --accent-gold: #6fa596;
+    --accent-gold-light: #8dbdb0;
+    --accent-purple: #6fa596;
+    --accent-purple-light: #8dbdb0;
+
+    --quadrant-fire: #d97b6e;
+    --quadrant-fire-bg: #3a2420;
+    --quadrant-fire-border: #5c342c;
+
+    --quadrant-stars: #7d93c2;
+    --quadrant-stars-bg: #212636;
+    --quadrant-stars-border: #374363;
+
+    --quadrant-wind: #c9a955;
+    --quadrant-wind-bg: #332c1c;
+    --quadrant-wind-border: #544726;
+
+    --quadrant-mist: #a19d92;
+    --quadrant-mist-bg: #26241f;
+    --quadrant-mist-border: #3a362e;
+
+    --status-done: #6fbf7f;
+    --status-eliminated: #d97b70;
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-glow: none;
+  }
 }
 
 *,

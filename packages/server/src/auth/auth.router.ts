@@ -3,6 +3,8 @@ import { z } from 'zod';
 import prisma from '../lib/prisma.js';
 import * as authService from './auth.service.js';
 import { AppError } from './auth.service.js';
+import { authMiddleware } from './auth.middleware.js';
+import { isThemeId } from '../lib/lexicon.js';
 
 const router = Router();
 
@@ -33,6 +35,19 @@ const resetPasswordSchema = z.object({
   token: z.string().min(1),
   newPassword: z.string().min(8),
 });
+
+const meSchema = z.object({
+  themeId: z.string().refine(isThemeId, 'Thème inconnu'),
+});
+
+const meSelect = {
+  id: true,
+  email: true,
+  displayName: true,
+  createdAt: true,
+  updatedAt: true,
+  themeId: true,
+} as const;
 
 // Base publique de l'application, utilisée pour construire le lien de reset.
 const APP_URL = process.env['CORS_ORIGIN'] ?? 'http://localhost:5173';
@@ -145,6 +160,49 @@ router.post('/reset-password', async (req, res) => {
     } else {
       res.status(500).json({ error: 'Internal server error' });
     }
+  }
+});
+
+/**
+ * Profil de l'utilisateur connecté — gap connu depuis la feature auth
+ * originelle (AuthContext.tsx l'appelait déjà en fallback sans que la route
+ * existe côté serveur). Sert aussi à exposer `themeId` (v3-12) pour que le
+ * client applique le thème avant le premier rendu utile.
+ */
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.userId }, select: meSelect });
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    res.json(user);
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Préférences de profil — en v3, seul `themeId` est modifiable ici. Pas de
+ * table d'entitlements : quand des thèmes payants arriveront (v4), c'est ici
+ * que la validation de l'achat prendra place.
+ */
+router.patch('/me', authMiddleware, async (req, res) => {
+  const parsed = meSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Validation error', details: parsed.error.issues });
+    return;
+  }
+
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { themeId: parsed.data.themeId },
+      select: meSelect,
+    });
+    res.json(user);
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
