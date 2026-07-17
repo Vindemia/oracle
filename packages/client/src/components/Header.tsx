@@ -1,12 +1,23 @@
-import { ScrollIcon, GearIcon, SignOutIcon, QuestionIcon, FeatherIcon } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { ScrollIcon, GearIcon, SignOutIcon, QuestionIcon, FeatherIcon, WindIcon } from '@phosphor-icons/react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useFireAlert } from '../context/FireAlertContext.js';
 import { useTheme } from '../context/ThemeContext.js';
+import { useWhispers } from '../hooks/useWhispers.js';
 import { HelpDrawer } from './HelpDrawer.js';
 import { FeedbackOverlay } from './FeedbackOverlay.js';
+import { WhisperCapture } from './WhisperCapture.js';
+import { WhisperTriage } from './WhisperTriage.js';
 import styles from './Header.module.css';
+
+const WHISPER_LONG_PRESS_MS = 500;
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
+}
 
 export function Header() {
   const navigate = useNavigate();
@@ -14,13 +25,67 @@ export function Header() {
   const { logout } = useAuth();
   const { hasFireTasks } = useFireAlert();
   const { t } = useTheme();
+  const { whispers, capture, reveal, dismiss } = useWhispers();
   const [helpOpen, setHelpOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [whisperCaptureOpen, setWhisperCaptureOpen] = useState(false);
+  const [whisperTriageOpen, setWhisperTriageOpen] = useState(false);
+  const longPressTimer = useRef<number | null>(null);
+  const longPressTriggered = useRef(false);
 
   const isFocus = location.pathname === '/focus';
 
   const toggle = (path: string) => {
     void navigate(location.pathname === path ? '/' : path);
+  };
+
+  const openTriage = () => {
+    setWhisperCaptureOpen(false);
+    setWhisperTriageOpen(true);
+  };
+
+  const openCapture = () => {
+    setWhisperTriageOpen(false);
+    setWhisperCaptureOpen(true);
+  };
+
+  // Raccourci clavier global "n" (hors champ de saisie) → ouvre la capture instantanée.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'n' || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
+      openCapture();
+    };
+    document.addEventListener('keydown', handler);
+    return () => { document.removeEventListener('keydown', handler); };
+  }, []);
+
+  const cancelLongPress = () => {
+    if (longPressTimer.current !== null) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const startLongPress = () => {
+    longPressTriggered.current = false;
+    longPressTimer.current = window.setTimeout(() => {
+      longPressTriggered.current = true;
+      openTriage();
+    }, WHISPER_LONG_PRESS_MS);
+  };
+
+  const handleWhisperClick = () => {
+    if (longPressTriggered.current) {
+      longPressTriggered.current = false;
+      return;
+    }
+    // Second clic (capture déjà ouverte) → bascule vers la liste de tri.
+    if (whisperCaptureOpen) {
+      openTriage();
+    } else {
+      openCapture();
+    }
   };
 
   return (
@@ -88,6 +153,20 @@ export function Header() {
               <FeatherIcon size={20} weight={feedbackOpen ? 'duotone' : 'regular'} />
             </button>
             <button
+              className={[styles.iconBtn, (whisperCaptureOpen || whisperTriageOpen) ? styles.active : null].filter(Boolean).join(' ')}
+              onClick={handleWhisperClick}
+              onPointerDown={startLongPress}
+              onPointerUp={cancelLongPress}
+              onPointerLeave={cancelLongPress}
+              aria-label={`Capturer un ${t('quickNote')}`}
+              title={t('quickNote')}
+            >
+              <WindIcon size={20} weight={(whisperCaptureOpen || whisperTriageOpen) ? 'duotone' : 'regular'} />
+              {whispers.length > 0 && (
+                <span className={styles.badge} aria-hidden="true">{whispers.length}</span>
+              )}
+            </button>
+            <button
               className={styles.iconBtn}
               onClick={() => { void logout(); }}
               aria-label="Se déconnecter"
@@ -100,6 +179,14 @@ export function Header() {
       </header>
       <HelpDrawer open={helpOpen} onClose={() => { setHelpOpen(false); }} />
       <FeedbackOverlay open={feedbackOpen} onClose={() => { setFeedbackOpen(false); }} />
+      <WhisperCapture open={whisperCaptureOpen} onClose={() => { setWhisperCaptureOpen(false); }} capture={capture} />
+      <WhisperTriage
+        open={whisperTriageOpen}
+        onClose={() => { setWhisperTriageOpen(false); }}
+        whispers={whispers}
+        reveal={reveal}
+        dismiss={dismiss}
+      />
     </>
   );
 }

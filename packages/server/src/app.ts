@@ -7,6 +7,7 @@ import tagsRouter from './tags/tags.router.js';
 import pushRouter from './push/push.router.js';
 import calendarRouter from './calendar/calendar.router.js';
 import feedbackRouter from './feedback/feedback.router.js';
+import whispersRouter from './whispers/whispers.router.js';
 import { errorMiddleware } from './error.middleware.js';
 
 const app = express();
@@ -25,6 +26,7 @@ app.use('/api/tags', tagsRouter);
 app.use('/api/push', pushRouter);
 app.use('/api/calendar', calendarRouter);
 app.use('/api/feedback', feedbackRouter);
+app.use('/api/whispers', whispersRouter);
 
 // Global error handler — must be registered after all routes
 app.use(errorMiddleware);
