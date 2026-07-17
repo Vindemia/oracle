@@ -32,16 +32,15 @@ services:
       VAPID_SUBJECT: ${VAPID_SUBJECT}
       SMTP_URL: ${SMTP_URL}
       MAIL_FROM: ${MAIL_FROM}
-    ports:
-      - "${PORT:-4300}:${PORT:-4300}"
 
   client:
     image: ${DOCKER_REGISTRY}/oracle-client:${TAG}
     restart: unless-stopped
     depends_on:
       - server
-    ports:
-      - "${CLIENT_PORT:-4301}:80"
+    networks:
+      - default
+      - proxynet
 
   db-backup:
     image: postgres:16-alpine
@@ -66,3 +65,8 @@ services:
 volumes:
   db_data:
   backups:
+
+networks:
+  default: {}
+  proxynet:
+    external: true
