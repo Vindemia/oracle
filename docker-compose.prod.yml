@@ -38,6 +38,9 @@ services:
     restart: unless-stopped
     depends_on:
       - server
+    networks:
+      - default
+      - proxynet
 
   db-backup:
     image: postgres:16-alpine
@@ -62,3 +65,8 @@ services:
 volumes:
   db_data:
   backups:
+
+networks:
+  default: {}
+  proxynet:
+    external: true
