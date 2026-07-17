@@ -32,6 +32,9 @@ services:
       VAPID_SUBJECT: ${VAPID_SUBJECT}
       SMTP_URL: ${SMTP_URL}
       MAIL_FROM: ${MAIL_FROM}
+    networks:
+      - default
+      - proxynet
 
   client:
     image: ${DOCKER_REGISTRY}/oracle-client:${TAG}
