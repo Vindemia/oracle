@@ -22,6 +22,13 @@ export interface Tag {
   createdAt: string;
 }
 
+export interface TaskStep {
+  id: string;
+  title: string;
+  done: boolean;
+  position: number;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -32,6 +39,7 @@ export interface Task {
   position: number;
   userId: string;
   tags: Tag[];
+  steps: TaskStep[];
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;

@@ -24,9 +24,10 @@ interface FocusViewProps {
   onPass: (id: string) => Promise<void>;
   onComplete: (id: string) => Promise<void>;
   onPassFire: (id: string) => Promise<void>;
+  onToggleStep: (id: string, stepId: string) => Promise<void>;
 }
 
-export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass, onComplete, onPassFire }: FocusViewProps) {
+export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass, onComplete, onPassFire, onToggleStep }: FocusViewProps) {
   const navigate = useNavigate();
   const { theme, t } = useTheme();
   const [selectedDate, setSelectedDate] = useState<string>(getDefaultDatetime());
@@ -178,6 +179,11 @@ export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass,
   if (phase === 'action') {
     const currentFire = fireTasks[0];
     if (!currentFire) return null;
+    // Fragments (v3-01) — LA chose à faire ; le dernier fragment coché propose
+    // la complétion (pulsation du bouton existant), il ne la déclenche jamais.
+    const nextFireStep = currentFire.steps.find((s) => !s.done);
+    const doneFireSteps = currentFire.steps.filter((s) => s.done).length;
+    const allFireStepsDone = currentFire.steps.length > 0 && nextFireStep === undefined;
     return (
       <>
         <div className={styles.container}>
@@ -195,6 +201,28 @@ export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass,
             {/* Carte vision */}
             <div className={[styles.taskCard, styles.fireCard, showSuccessFlash ? styles.successFlash : undefined].filter(Boolean).join(' ')}>
               <h1 className={styles.taskTitle}>{currentFire.title}</h1>
+
+              {/* Fragments (v3-01) — le prochain fragment, en grand, sous le titre */}
+              {currentFire.steps.length > 0 && (
+                <div key={nextFireStep?.id ?? 'steps-done'} className={[styles.stepBlock, styles.fadeIn].join(' ')}>
+                  {nextFireStep !== undefined ? (
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={nextFireStep.done}
+                      aria-label={t('step') + ' : ' + nextFireStep.title}
+                      className={styles.stepBigBullet}
+                      onClick={() => { void onToggleStep(currentFire.id, nextFireStep.id); }}
+                    >
+                      <span className={styles.stepBigMark}>◈</span>
+                      <span className={styles.stepBigTitle}>{nextFireStep.title}</span>
+                    </button>
+                  ) : (
+                    <p className={styles.stepBigAllDone}>✓</p>
+                  )}
+                  <span className={styles.stepBigCounter}>{doneFireSteps}/{currentFire.steps.length}</span>
+                </div>
+              )}
 
               {/* Tags */}
               {currentFire.tags.length > 0 && (
@@ -222,7 +250,7 @@ export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass,
               <div className={styles.actions}>
                 <button
                   type="button"
-                  className={styles.completeBtn}
+                  className={[styles.completeBtn, allFireStepsDone ? styles.stepCompletePulse : undefined].filter(Boolean).join(' ')}
                   onClick={() => { void handleComplete(); }}
                   disabled={isCompleting}
                 >

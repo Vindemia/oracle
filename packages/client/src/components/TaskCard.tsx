@@ -7,6 +7,7 @@ import { hexToRgba } from '../utils/colors.js';
 import { TagSelector } from './TagSelector.js';
 import { buildGoogleCalUrl, downloadIcal } from './CalendarButton.js';
 import { useTheme } from '../context/ThemeContext.js';
+import { useToast } from '../context/ToastContext.js';
 import styles from './TaskCard.module.css';
 
 interface TaskCardProps {
@@ -17,6 +18,9 @@ interface TaskCardProps {
   onUpdate: (id: string, data: Partial<Pick<Task, 'urgent' | 'important'>>) => Promise<void>;
   onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onAddStep: (id: string, title: string) => Promise<void>;
+  onToggleStep: (id: string, stepId: string) => Promise<void>;
+  onRemoveStep: (id: string, stepId: string) => Promise<void>;
   onUnplan?: (id: string) => Promise<void>;
   onPlan?: (id: string, date: string) => Promise<void>;
 }
@@ -46,13 +50,16 @@ function defaultDatetimeLocal(): string {
   return String(d.getFullYear()) + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T09:00';
 }
 
-export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onUnplan, onPlan }: TaskCardProps) {
+export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onAddStep, onToggleStep, onRemoveStep, onUnplan, onPlan }: TaskCardProps) {
   const { t } = useTheme();
+  const { showToast } = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tagPopoverOpen, setTagPopoverOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState({ top: 0, right: 0 });
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
+  const [stepsExpanded, setStepsExpanded] = useState(false);
+  const [newStepTitle, setNewStepTitle] = useState('');
 
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [planModalStep, setPlanModalStep] = useState<'pick' | 'calendar'>('pick');
@@ -94,6 +101,21 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onU
       void onEliminate(task.id);
     } else {
       void onComplete(task.id);
+    }
+  };
+
+  // Fragments (v3-01) — toujours mettre en avant le prochain non fait, jamais le premier tout court
+  const nextStep = task.steps.find((s) => !s.done);
+  const doneStepsCount = task.steps.filter((s) => s.done).length;
+
+  const handleAddStep = async () => {
+    const title = newStepTitle.trim();
+    if (!title) return;
+    setNewStepTitle('');
+    try {
+      await onAddStep(task.id, title);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Une erreur est survenue, réessaie', 'error');
     }
   };
 
@@ -204,6 +226,69 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onU
         <div className={styles.content}>
           <span className={styles.title}>{task.title}</span>
 
+          {/* Fragments (v3-01) — prochain non fait + compteur ; clic sur la ligne (hors puce) déplie l'éditeur */}
+          {task.steps.length > 0 && (
+            <div className={styles.stepsRow} onClick={() => { setStepsExpanded((v) => !v); }}>
+              {nextStep !== undefined && (
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={nextStep.done}
+                  aria-label={t('step') + ' : ' + nextStep.title}
+                  className={[styles.stepBullet, nextStep.done ? styles.stepBulletChecked : undefined].filter(Boolean).join(' ')}
+                  onClick={(e) => { e.stopPropagation(); void onToggleStep(task.id, nextStep.id); }}
+                >
+                  ◈
+                </button>
+              )}
+              {nextStep !== undefined && (
+                <span className={styles.stepTitle}>{nextStep.title}</span>
+              )}
+              <span className={styles.stepCounter}>{doneStepsCount}/{task.steps.length}</span>
+            </div>
+          )}
+
+          {stepsExpanded && (
+            <div className={styles.stepsList} onClick={(e) => { e.stopPropagation(); }}>
+              {task.steps.map((step) => (
+                <div key={step.id} className={styles.stepItem}>
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={step.done}
+                    aria-label={t('step') + ' : ' + step.title}
+                    className={[styles.stepItemCheck, step.done ? styles.stepBulletChecked : undefined].filter(Boolean).join(' ')}
+                    onClick={() => { void onToggleStep(task.id, step.id); }}
+                  >
+                    {step.done ? '✓' : '◈'}
+                  </button>
+                  <span className={[styles.stepItemTitle, step.done ? styles.stepItemDone : undefined].filter(Boolean).join(' ')}>
+                    {step.title}
+                  </span>
+                  <button
+                    type="button"
+                    className={styles.stepItemRemove}
+                    aria-label={'Supprimer ' + t('step') + ' : ' + step.title}
+                    onClick={() => { void onRemoveStep(task.id, step.id); }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {task.steps.length < 10 && (
+                <input
+                  type="text"
+                  className={styles.stepAddInput}
+                  placeholder={t('newStepPlaceholder')}
+                  value={newStepTitle}
+                  onChange={(e) => { setNewStepTitle(e.target.value); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { void handleAddStep(); } }}
+                  aria-label={t('newStepPlaceholder')}
+                />
+              )}
+            </div>
+          )}
+
           {/* Date de planification — juste sous le titre */}
           {task.plannedFor !== null && (
             <div className={styles.plannedBadge}>
@@ -308,6 +393,10 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onU
           ref={menuRef}
           style={{ top: menuPos.top, right: menuPos.right }}
         >
+          <button type="button" className={styles.menuItem} onClick={() => { setStepsExpanded(true); setMenuOpen(false); }}>
+            ◈ {t('step').charAt(0).toUpperCase() + t('step').slice(1)}s
+          </button>
+          <div className={styles.menuDivider} />
           {!task.urgent && (
             <button type="button" className={styles.menuItem} onClick={() => { void onUpdate(task.id, { urgent: true }); setMenuOpen(false); }}>
               ⚡ Rendre urgent
