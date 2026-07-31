@@ -51,6 +51,7 @@ function mockTask(overrides: Record<string, unknown> = {}) {
     updatedAt: new Date(),
     completedAt: null,
     tags: [],
+    steps: [],
     ...overrides,
   };
 }
