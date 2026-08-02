@@ -1,7 +1,34 @@
+import type { ReactElement, ReactNode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { renderWithProviders, screen, fireEvent } from '../test/render.js';
+import { MemoryRouter } from 'react-router-dom';
+import { render, screen, fireEvent, waitFor } from '../test/render.js';
+import { ThemeProvider } from '../context/ThemeContext.js';
+import { ToastProvider } from '../context/ToastContext.js';
+import { ToastList } from '../components/ToastList.js';
 import { FocusView } from './FocusView.js';
 import type { Task } from '../types/index.js';
+
+// FocusView consomme désormais useToast() (toast d'annulation, v3-17) —
+// même raison que dans TaskCard.test.tsx : composer ToastProvider ici plutôt
+// que d'alourdir le helper partagé. Passé en `wrapper` (pas englobé
+// manuellement) pour que les `rerender(...)` ultérieurs du test réappliquent
+// automatiquement les providers.
+function FocusAllProviders({ children }: { children: ReactNode }) {
+  return (
+    <MemoryRouter>
+      <ThemeProvider>
+        <ToastProvider>
+          {children}
+          <ToastList />
+        </ToastProvider>
+      </ThemeProvider>
+    </MemoryRouter>
+  );
+}
+
+function renderFocusView(ui: ReactElement) {
+  return render(ui, { wrapper: FocusAllProviders });
+}
 
 function makeFireTask(steps: Task['steps']): Task {
   return {
@@ -37,7 +64,7 @@ describe('FocusView — enchaînement des fragments (Phase Action)', () => {
       { id: 's2', title: 'Signer la page 3', done: false, position: 1 },
     ];
 
-    const { rerender } = renderWithProviders(
+    const { rerender } = renderFocusView(
       <FocusView
         tasks={[makeFireTask(stepsInitial)]}
         isLoading={false}
@@ -47,6 +74,7 @@ describe('FocusView — enchaînement des fragments (Phase Action)', () => {
         onComplete={onComplete}
         onPassFire={noop}
         onToggleStep={onToggleStep}
+        onReactivate={noop}
       />,
     );
 
@@ -75,6 +103,7 @@ describe('FocusView — enchaînement des fragments (Phase Action)', () => {
         onComplete={onComplete}
         onPassFire={noop}
         onToggleStep={onToggleStep}
+        onReactivate={noop}
       />,
     );
     expect(screen.getByText('Signer la page 3')).toBeInTheDocument();
@@ -103,10 +132,39 @@ describe('FocusView — enchaînement des fragments (Phase Action)', () => {
         onComplete={onComplete}
         onPassFire={noop}
         onToggleStep={onToggleStep}
+        onReactivate={noop}
       />,
     );
 
     expect(onComplete).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: /C'est fait/ })).toBeEnabled();
+  });
+});
+
+describe('FocusView — Annulation (v3-17)', () => {
+  it('compléter la Phase Action affiche un toast « Annuler » qui appelle onReactivate', async () => {
+    const onComplete = vi.fn(noop);
+    const onReactivate = vi.fn(noop);
+
+    renderFocusView(
+      <FocusView
+        tasks={[makeFireTask([])]}
+        isLoading={false}
+        allTags={[]}
+        onPlan={noop}
+        onPass={noop}
+        onComplete={onComplete}
+        onPassFire={noop}
+        onToggleStep={noop}
+        onReactivate={onReactivate}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /C'est fait/ }));
+
+    const undoBtn = await screen.findByText('Annuler');
+    await waitFor(() => { expect(onComplete).toHaveBeenCalledWith('fire-1'); });
+    fireEvent.click(undoBtn);
+    expect(onReactivate).toHaveBeenCalledWith('fire-1');
   });
 });

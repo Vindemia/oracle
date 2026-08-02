@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react';
 import { api } from '../api/client.js';
 import { getQuadrantMeta, getQuadrantTermKey } from '../utils/quadrant.js';
 import { useTheme } from '../context/ThemeContext.js';
@@ -44,6 +45,7 @@ export function HistoryView() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [reactivatingId, setReactivatingId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -66,6 +68,27 @@ export function HistoryView() {
       .catch(() => { setError('Erreur lors du chargement de l\'historique'); })
       .finally(() => { setIsLoading(false); });
   }, []);
+
+  // Annulation (v3-17) — filet permanent, sans limite de temps : remet la
+  // tâche à sa place d'origine (quadrant/position jamais touchés par
+  // complete/eliminate) et la retire localement sans re-fetch complet.
+  const handleReactivate = async (id: string) => {
+    if (reactivatingId !== null) return;
+    setReactivatingId(id);
+    try {
+      await api.post<Task>('/tasks/' + id + '/reactivate', {});
+      setTasks((t) => t.filter((task) => task.id !== id));
+      const raw = sessionStorage.getItem('oracle:history');
+      if (raw) {
+        const all = (JSON.parse(raw) as Task[]).filter((task) => task.id !== id);
+        sessionStorage.setItem('oracle:history', JSON.stringify(all));
+      }
+    } catch {
+      // Le bouton reste actif, l'utilisateur peut retenter.
+    } finally {
+      setReactivatingId(null);
+    }
+  };
 
   const loadMore = () => {
     const raw = sessionStorage.getItem('oracle:history');
@@ -131,6 +154,16 @@ export function HistoryView() {
                               ))}
                             </div>
                           )}
+                          <button
+                            type="button"
+                            className={styles.reactivateBtn}
+                            disabled={reactivatingId === task.id}
+                            onClick={() => { void handleReactivate(task.id); }}
+                            aria-label={'Remettre en place : ' + task.title}
+                            title="Remettre en place"
+                          >
+                            <ArrowCounterClockwiseIcon size={15} weight="bold" />
+                          </button>
                         </li>
                       );
                     })}

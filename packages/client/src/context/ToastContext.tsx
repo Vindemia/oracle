@@ -3,17 +3,32 @@ import type { ReactNode } from 'react';
 
 export type ToastVariant = 'fire' | 'stars' | 'wind' | 'mist' | 'info' | 'error' | 'special';
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface ToastItem {
   id: string;
   message: string;
   variant: ToastVariant;
+  action?: ToastAction;
+}
+
+interface ShowToastOptions {
+  /** Bouton d'action interne au toast (ex. « Annuler », v3-17) — distinct du clic de fermeture. */
+  action?: ToastAction;
+  /** Durée d'affichage en ms avant disparition automatique (défaut 2500). */
+  durationMs?: number;
 }
 
 interface ToastContextValue {
   toasts: ToastItem[];
-  showToast: (message: string, variant?: ToastVariant) => void;
+  showToast: (message: string, variant?: ToastVariant, options?: ShowToastOptions) => void;
   dismissToast: (id: string) => void;
 }
+
+const DEFAULT_DURATION_MS = 2500;
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
@@ -25,13 +40,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const showToast = useCallback((message: string, variant: ToastVariant = 'info') => {
+  const showToast = useCallback((
+    message: string,
+    variant: ToastVariant = 'info',
+    options?: ShowToastOptions,
+  ) => {
     counterRef.current += 1;
     const id = 'toast-' + counterRef.current.toString();
-    setToasts((prev) => [...prev, { id, message, variant }]);
+    setToasts((prev) => [...prev, { id, message, variant, ...(options?.action ? { action: options.action } : {}) }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 2500);
+    }, options?.durationMs ?? DEFAULT_DURATION_MS);
   }, []);
 
   return (

@@ -31,6 +31,7 @@ interface MatrixViewProps {
   allTags: Tag[];
   onComplete: (id: string) => Promise<void>;
   onEliminate: (id: string) => Promise<void>;
+  onReactivate: (id: string) => Promise<void>;
   onUpdate: (id: string, data: Partial<Pick<Task, 'urgent' | 'important'>>) => Promise<void>;
   onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -43,7 +44,7 @@ interface MatrixViewProps {
   onFocusInput?: () => void;
 }
 
-export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onReorder, onAddStep, onToggleStep, onRemoveStep, onUnplan, onPlan, onFocusInput }: MatrixViewProps) {
+export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEliminate, onReactivate, onUpdate, onUpdateTags, onDelete, onReorder, onAddStep, onToggleStep, onRemoveStep, onUnplan, onPlan, onFocusInput }: MatrixViewProps) {
   const { theme, t } = useTheme();
   const tasksByQuadrant = useMemo(() => {
     const map: Record<Quadrant, Task[]> = { FIRE: [], STARS: [], WIND: [], MIST: [] };
@@ -145,6 +146,7 @@ export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEli
             allTags={allTags}
             onComplete={onComplete}
             onEliminate={onEliminate}
+            onReactivate={onReactivate}
             onUpdate={onUpdate}
             onUpdateTags={onUpdateTags}
             onDelete={onDelete}

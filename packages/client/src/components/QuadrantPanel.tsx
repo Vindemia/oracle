@@ -16,6 +16,7 @@ interface SortableTaskCardProps {
   allTags: Tag[];
   onComplete: (id: string) => Promise<void>;
   onEliminate: (id: string) => Promise<void>;
+  onReactivate: (id: string) => Promise<void>;
   onUpdate: (id: string, data: Partial<Pick<Task, 'urgent' | 'important'>>) => Promise<void>;
   onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -26,7 +27,7 @@ interface SortableTaskCardProps {
   onPlan?: (id: string, date: string) => Promise<void>;
 }
 
-function SortableTaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onAddStep, onToggleStep, onRemoveStep, onUnplan, onPlan }: SortableTaskCardProps) {
+function SortableTaskCard({ task, allTags, onComplete, onEliminate, onReactivate, onUpdate, onUpdateTags, onDelete, onAddStep, onToggleStep, onRemoveStep, onUnplan, onPlan }: SortableTaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
   const wrapperStyle = {
@@ -48,6 +49,7 @@ function SortableTaskCard({ task, allTags, onComplete, onEliminate, onUpdate, on
         allTags={allTags}
         onComplete={onComplete}
         onEliminate={onEliminate}
+        onReactivate={onReactivate}
         onUpdate={onUpdate}
         onUpdateTags={onUpdateTags}
         onDelete={onDelete}
@@ -67,6 +69,7 @@ interface QuadrantPanelProps {
   allTags: Tag[];
   onComplete: (id: string) => Promise<void>;
   onEliminate: (id: string) => Promise<void>;
+  onReactivate: (id: string) => Promise<void>;
   onUpdate: (id: string, data: Partial<Pick<Task, 'urgent' | 'important'>>) => Promise<void>;
   onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -77,7 +80,7 @@ interface QuadrantPanelProps {
   onPlan?: (id: string, date: string) => Promise<void>;
 }
 
-export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onAddStep, onToggleStep, onRemoveStep, onUnplan, onPlan }: QuadrantPanelProps) {
+export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminate, onReactivate, onUpdate, onUpdateTags, onDelete, onAddStep, onToggleStep, onRemoveStep, onUnplan, onPlan }: QuadrantPanelProps) {
   const meta = getQuadrantMeta(quadrant);
   const { theme, t } = useTheme();
   const { setNodeRef, isOver } = useDroppable({ id: quadrant });
@@ -116,6 +119,7 @@ export function QuadrantPanel({ quadrant, tasks, allTags, onComplete, onEliminat
                 allTags={allTags}
                 onComplete={onComplete}
                 onEliminate={onEliminate}
+                onReactivate={onReactivate}
                 onUpdate={onUpdate}
                 onUpdateTags={onUpdateTags}
                 onDelete={onDelete}

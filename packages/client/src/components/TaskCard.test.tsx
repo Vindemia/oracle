@@ -1,20 +1,25 @@
 import type { ReactElement } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import { render, screen, fireEvent } from '../test/render.js';
+import { render, screen, fireEvent, waitFor } from '../test/render.js';
 import { ThemeProvider } from '../context/ThemeContext.js';
 import { ToastProvider } from '../context/ToastContext.js';
+import { ToastList } from './ToastList.js';
 import { TaskCard } from './TaskCard.js';
 import type { Task } from '../types/index.js';
 
-// TaskCard consomme useToast() (toast d'erreur sur l'ajout de fragment) en plus
-// de useTheme() — le helper renderWithProviders ne fournit pas ToastProvider
-// (cf. commentaire dans test/render.tsx), on compose donc ici.
+// TaskCard consomme useToast() (toast d'erreur sur l'ajout de fragment, toast
+// d'annulation v3-17) en plus de useTheme() — le helper renderWithProviders ne
+// fournit pas ToastProvider (cf. commentaire dans test/render.tsx), on compose
+// donc ici, avec <ToastList /> pour pouvoir observer les toasts rendus.
 function renderTaskCard(ui: ReactElement) {
   return render(
     <MemoryRouter>
       <ThemeProvider>
-        <ToastProvider>{ui}</ToastProvider>
+        <ToastProvider>
+          {ui}
+          <ToastList />
+        </ToastProvider>
       </ThemeProvider>
     </MemoryRouter>,
   );
@@ -54,6 +59,7 @@ describe('TaskCard — fragments', () => {
         allTags={[]}
         onComplete={noop}
         onEliminate={noop}
+        onReactivate={noop}
         onUpdate={noop}
         onUpdateTags={noop}
         onDelete={noop}
@@ -78,6 +84,7 @@ describe('TaskCard — fragments', () => {
         allTags={[]}
         onComplete={noop}
         onEliminate={noop}
+        onReactivate={noop}
         onUpdate={noop}
         onUpdateTags={noop}
         onDelete={noop}
@@ -98,5 +105,95 @@ describe('TaskCard — fragments', () => {
     // dans l'éditeur complet) reste absent du DOM. Sans le stopPropagation sur
     // la puce, le clic remonterait au conteneur et déplierait la carte.
     expect(screen.queryByText('Fragment déjà fait')).not.toBeInTheDocument();
+  });
+});
+
+describe('TaskCard — Annulation (v3-17)', () => {
+  it('compléter affiche un toast « Annuler » qui appelle onReactivate', async () => {
+    const onComplete = vi.fn(noop);
+    const onReactivate = vi.fn(noop);
+    renderTaskCard(
+      <TaskCard
+        task={baseTask}
+        allTags={[]}
+        onComplete={onComplete}
+        onEliminate={noop}
+        onReactivate={onReactivate}
+        onUpdate={noop}
+        onUpdateTags={noop}
+        onDelete={noop}
+        onAddStep={noop}
+        onToggleStep={noop}
+        onRemoveStep={noop}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Compléter' }));
+
+    const undoBtn = await screen.findByText('Annuler');
+    expect(onComplete).toHaveBeenCalledWith('task-1');
+    fireEvent.click(undoBtn);
+    expect(onReactivate).toHaveBeenCalledWith('task-1');
+  });
+
+  it('éliminer (quadrant MIST) affiche aussi un toast « Annuler »', async () => {
+    const onEliminate = vi.fn(noop);
+    const onReactivate = vi.fn(noop);
+    const { container } = renderTaskCard(
+      <TaskCard
+        task={{ ...baseTask, quadrant: 'MIST' }}
+        allTags={[]}
+        onComplete={noop}
+        onEliminate={onEliminate}
+        onReactivate={onReactivate}
+        onUpdate={noop}
+        onUpdateTags={noop}
+        onDelete={noop}
+        onAddStep={noop}
+        onToggleStep={noop}
+        onRemoveStep={noop}
+      />,
+    );
+
+    // Le libellé du bouton circle dépend du thème ('Éliminer' vs 'Supprimer') —
+    // on cible par classe plutôt que par nom accessible pour rester agnostique.
+    const circleBtn = container.querySelector<HTMLButtonElement>('[class*="circle"]');
+    expect(circleBtn).not.toBeNull();
+    fireEvent.click(circleBtn as HTMLButtonElement);
+
+    const undoBtn = await screen.findByText('Annuler');
+    expect(onEliminate).toHaveBeenCalledWith('task-1');
+    fireEvent.click(undoBtn);
+    expect(onReactivate).toHaveBeenCalledWith('task-1');
+  });
+
+  it('cliquer sur le fond du toast le ferme sans annuler (pas de propagation depuis le bouton)', async () => {
+    const onComplete = vi.fn(noop);
+    const onReactivate = vi.fn(noop);
+    renderTaskCard(
+      <TaskCard
+        task={baseTask}
+        allTags={[]}
+        onComplete={onComplete}
+        onEliminate={noop}
+        onReactivate={onReactivate}
+        onUpdate={noop}
+        onUpdateTags={noop}
+        onDelete={noop}
+        onAddStep={noop}
+        onToggleStep={noop}
+        onRemoveStep={noop}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Compléter' }));
+    // baseTask est en STARS : getCompleteToast(quadrant, false, false) retourne toujours ce message.
+    const message = await screen.findByText('✦ Vision accomplie !');
+    fireEvent.click(message);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Annuler')).not.toBeInTheDocument();
+    });
+    expect(onReactivate).not.toHaveBeenCalled();
   });
 });

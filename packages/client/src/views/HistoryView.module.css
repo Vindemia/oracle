@@ -106,6 +106,32 @@
   color: var(--text-muted);
 }
 
+/* Remettre en place (v3-17) — filet de rattrapage permanent depuis l'historique. */
+.reactivateBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+
+.reactivateBtn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.reactivateBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .tags {
   display: flex;
   flex-wrap: wrap;

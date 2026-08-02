@@ -4,8 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import type { Tag, Task } from '../types/index.js';
 import { CalendarButton, buildGoogleCalUrl, downloadIcal } from '../components/CalendarButton.js';
 import { useTheme } from '../context/ThemeContext.js';
+import { useToast } from '../context/ToastContext.js';
 import { getQuadrantTermKey } from '../utils/quadrant.js';
+import { getCompleteToast } from '../utils/animations.js';
 import styles from './FocusView.module.css';
+
+// Annulation (v3-17) : même fenêtre de rattrapage que dans la Matrice.
+const UNDO_TOAST_DURATION_MS = 6000;
 
 function getDefaultDatetime(): string {
   const d = new Date();
@@ -25,11 +30,13 @@ interface FocusViewProps {
   onComplete: (id: string) => Promise<void>;
   onPassFire: (id: string) => Promise<void>;
   onToggleStep: (id: string, stepId: string) => Promise<void>;
+  onReactivate: (id: string) => Promise<void>;
 }
 
-export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass, onComplete, onPassFire, onToggleStep }: FocusViewProps) {
+export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass, onComplete, onPassFire, onToggleStep, onReactivate }: FocusViewProps) {
   const navigate = useNavigate();
   const { theme, t } = useTheme();
+  const { showToast } = useToast();
   const [selectedDate, setSelectedDate] = useState<string>(getDefaultDatetime());
   const [plannedTask, setPlannedTask] = useState<Task | null>(null);
   const [isPlanning, setIsPlanning] = useState(false);
@@ -79,10 +86,17 @@ export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass,
 
   const handleComplete = async () => {
     if (!fireTasks[0] || isCompleting) return;
+    const currentTask = fireTasks[0];
     setIsCompleting(true);
     setShowSuccessFlash(true);
     try {
-      await onComplete(fireTasks[0].id);
+      await onComplete(currentTask.id);
+      // Annulation (v3-17) — même filet immédiat que dans la Matrice.
+      const { message, variant } = getCompleteToast(currentTask.quadrant, false, false);
+      showToast(message, variant, {
+        durationMs: UNDO_TOAST_DURATION_MS,
+        action: { label: 'Annuler', onClick: () => { void onReactivate(currentTask.id); } },
+      });
     } finally {
       setIsCompleting(false);
       setTimeout(() => {

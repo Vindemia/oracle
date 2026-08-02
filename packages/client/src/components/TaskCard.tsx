@@ -8,13 +8,18 @@ import { TagSelector } from './TagSelector.js';
 import { buildGoogleCalUrl, downloadIcal } from './CalendarButton.js';
 import { useTheme } from '../context/ThemeContext.js';
 import { useToast } from '../context/ToastContext.js';
+import { getCompleteToast, getEliminateToast } from '../utils/animations.js';
 import styles from './TaskCard.module.css';
+
+// Annulation (v3-17) : fenêtre de rattrapage immédiate après un complete/eliminate.
+const UNDO_TOAST_DURATION_MS = 6000;
 
 interface TaskCardProps {
   task: Task;
   allTags: Tag[];
   onComplete: (id: string) => Promise<void>;
   onEliminate: (id: string) => Promise<void>;
+  onReactivate: (id: string) => Promise<void>;
   onUpdate: (id: string, data: Partial<Pick<Task, 'urgent' | 'important'>>) => Promise<void>;
   onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -50,7 +55,7 @@ function defaultDatetimeLocal(): string {
   return String(d.getFullYear()) + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T09:00';
 }
 
-export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onAddStep, onToggleStep, onRemoveStep, onUnplan, onPlan }: TaskCardProps) {
+export function TaskCard({ task, allTags, onComplete, onEliminate, onReactivate, onUpdate, onUpdateTags, onDelete, onAddStep, onToggleStep, onRemoveStep, onUnplan, onPlan }: TaskCardProps) {
   const { t } = useTheme();
   const { showToast } = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -96,12 +101,32 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onUpdate, onU
     void onUpdateTags(task.id, newTags);
   };
 
+  // Annulation (v3-17) : toast « Annuler » quelques secondes après l'action —
+  // le filet permanent (Historique) reste disponible ensuite sans limite de temps.
   const handleCircleClick = () => {
-    if (isMist) {
-      void onEliminate(task.id);
-    } else {
-      void onComplete(task.id);
-    }
+    void (async () => {
+      try {
+        if (isMist) {
+          await onEliminate(task.id);
+          const { message, variant } = getEliminateToast();
+          showToast(message, variant, {
+            durationMs: UNDO_TOAST_DURATION_MS,
+            action: { label: 'Annuler', onClick: () => { void onReactivate(task.id); } },
+          });
+        } else {
+          await onComplete(task.id);
+          // ponytail: isFirstOfDay/allDone toujours false ici — nécessiteraient
+          // de connaître les autres tâches accomplies du jour, hors scope v3-17.
+          const { message, variant } = getCompleteToast(task.quadrant, false, false);
+          showToast(message, variant, {
+            durationMs: UNDO_TOAST_DURATION_MS,
+            action: { label: 'Annuler', onClick: () => { void onReactivate(task.id); } },
+          });
+        }
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Une erreur est survenue, réessaie', 'error');
+      }
+    })();
   };
 
   // Fragments (v3-01) — toujours mettre en avant le prochain non fait, jamais le premier tout court
