@@ -3,6 +3,7 @@ import { z } from 'zod';
 import prisma from '../lib/prisma.js';
 import { authMiddleware } from '../auth/auth.middleware.js';
 import { calcQuadrant, serialize, taskInclude } from '../tasks/tasks.router.js';
+import { markActiveDaySafe } from '../lib/activity.js';
 
 const router = Router();
 
@@ -111,6 +112,7 @@ router.post('/:id/reveal', async (req, res) => {
       prisma.whisper.delete({ where: { id: existing.id } }),
     ]);
 
+    markActiveDaySafe(req.userId);
     res.status(201).json(serialize(task));
   } catch {
     res.status(500).json({ error: 'Internal server error' });

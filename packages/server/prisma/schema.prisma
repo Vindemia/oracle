@@ -32,6 +32,10 @@ model User {
   lastStaleRemindersOn  String?
   pushSubscriptions     PushSubscription[]
 
+  // Rituel de l'Aube (v3-03) : dateKey locale du dernier rituel accompli.
+  lastRitualOn String?
+  activityDays ActivityDay[]
+
   // Token opaque d'authentification du flux iCal (les clients agenda ne portent pas de JWT)
   calendarFeedToken String? @unique
 
@@ -68,6 +72,9 @@ model Task {
   updatedAt   DateTime   @updatedAt
   completedAt DateTime?
   position    Int        @default(0)
+  // Étoile du jour (v3-03) : dateKey locale du jour où la vision a été choisie.
+  // Jamais nettoyée — l'affichage compare simplement à la dateKey courante.
+  starredOn   String?
   userId      String
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   tags        TaskTag[]
@@ -76,6 +83,17 @@ model Task {
   @@index([userId, status])
   @@index([userId, quadrant])
   @@index([userId, quadrant, position])
+  @@index([userId, starredOn])
+}
+
+// Jour actif (v3-03) : trace cumulative d'un jour où l'utilisateur a agi.
+// Purement additive — aucune streak cassable, aucun compteur d'absence.
+model ActivityDay {
+  userId  String
+  dateKey String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, dateKey])
 }
 
 // Fragments de vision (v3-01) : micro-étapes cochables d'une tâche.
