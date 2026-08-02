@@ -35,12 +35,15 @@ interface MatrixViewProps {
   onUpdateTags: (id: string, newTags: Tag[]) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onReorder: (quadrant: Quadrant, orderedIds: string[]) => Promise<void>;
+  onAddStep: (id: string, title: string) => Promise<void>;
+  onToggleStep: (id: string, stepId: string) => Promise<void>;
+  onRemoveStep: (id: string, stepId: string) => Promise<void>;
   onUnplan?: (id: string) => Promise<void>;
   onPlan?: (id: string, date: string) => Promise<void>;
   onFocusInput?: () => void;
 }
 
-export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onReorder, onUnplan, onPlan, onFocusInput }: MatrixViewProps) {
+export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEliminate, onUpdate, onUpdateTags, onDelete, onReorder, onAddStep, onToggleStep, onRemoveStep, onUnplan, onPlan, onFocusInput }: MatrixViewProps) {
   const { theme, t } = useTheme();
   const tasksByQuadrant = useMemo(() => {
     const map: Record<Quadrant, Task[]> = { FIRE: [], STARS: [], WIND: [], MIST: [] };
@@ -145,6 +148,9 @@ export function MatrixView({ tasks, isLoading, error, allTags, onComplete, onEli
             onUpdate={onUpdate}
             onUpdateTags={onUpdateTags}
             onDelete={onDelete}
+            onAddStep={onAddStep}
+            onToggleStep={onToggleStep}
+            onRemoveStep={onRemoveStep}
             {...(onUnplan !== undefined ? { onUnplan } : {})}
             {...(onPlan !== undefined ? { onPlan } : {})}
           />

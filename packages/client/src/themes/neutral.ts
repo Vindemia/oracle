@@ -93,5 +93,8 @@ export const neutralTheme: Theme = {
     quadrantStarsLabel: 'Important',
     quadrantWindLabel: 'Urgent',
     quadrantMistLabel: 'Le reste',
+
+    step: 'étape',
+    newStepPlaceholder: 'Nouvelle étape…',
   },
 };

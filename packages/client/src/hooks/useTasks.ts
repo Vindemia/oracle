@@ -15,6 +15,9 @@ interface UseTasksResult {
   reorderTasks: (quadrant: Quadrant, orderedIds: string[]) => Promise<void>;
   planTask: (id: string, date: string) => Promise<void>;
   unplanTask: (id: string) => Promise<void>;
+  addStep: (taskId: string, title: string) => Promise<void>;
+  toggleStep: (taskId: string, stepId: string) => Promise<void>;
+  removeStep: (taskId: string, stepId: string) => Promise<void>;
 }
 
 export function useTasks(): UseTasksResult {
@@ -179,9 +182,55 @@ export function useTasks(): UseTasksResult {
     }
   }, [rawTasks]);
 
+  // Position provisoire — écrasée par la réponse serveur (id + position définitifs)
+  // dès que la requête aboutit ; cf. rollback identique aux autres mutations.
+  const addStep = useCallback(async (taskId: string, title: string) => {
+    const prev = rawTasks;
+    const tempId = 'temp-step-' + Date.now().toString();
+    setRawTasks((ts) => ts.map((task) => task.id !== taskId
+      ? task
+      : { ...task, steps: [...task.steps, { id: tempId, title, done: false, position: task.steps.length }] }));
+    try {
+      const updated = await api.post<Task>('/tasks/' + taskId + '/steps', { title });
+      setRawTasks((ts) => ts.map((task) => task.id === taskId ? updated : task));
+    } catch (err) {
+      setRawTasks(prev);
+      throw err;
+    }
+  }, [rawTasks]);
+
+  const toggleStep = useCallback(async (taskId: string, stepId: string) => {
+    const prev = rawTasks;
+    const step = prev.find((t) => t.id === taskId)?.steps.find((s) => s.id === stepId);
+    const nextDone = step ? !step.done : true;
+    setRawTasks((ts) => ts.map((task) => task.id !== taskId
+      ? task
+      : { ...task, steps: task.steps.map((s) => s.id === stepId ? { ...s, done: nextDone } : s) }));
+    try {
+      await api.patch<Task>('/tasks/' + taskId + '/steps/' + stepId, { done: nextDone });
+    } catch (err) {
+      setRawTasks(prev);
+      throw err;
+    }
+  }, [rawTasks]);
+
+  const removeStep = useCallback(async (taskId: string, stepId: string) => {
+    const prev = rawTasks;
+    setRawTasks((ts) => ts.map((task) => task.id !== taskId
+      ? task
+      : { ...task, steps: task.steps.filter((s) => s.id !== stepId) }));
+    try {
+      await api.delete<Task>('/tasks/' + taskId + '/steps/' + stepId);
+    } catch (err) {
+      setRawTasks(prev);
+      throw err;
+    }
+  }, [rawTasks]);
+
   return {
     tasks, isLoading, error, refresh: fetchTasks,
     completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask,
     reorderTasks, planTask, unplanTask,
+    addStep, toggleStep, removeStep,
   };
 }

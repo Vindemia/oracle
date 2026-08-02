@@ -36,9 +36,9 @@ packages/
     ├── tasks/               # router, tests
     ├── tags/                # router, tests
     ├── lib/prisma.ts        # singleton Prisma
-    ├── lib/tags.ts          # taskInclude + serialize()
+    ├── lib/tags.ts          # DEFAULT_TAGS + seedUserTags()
     ├── app.ts               # Express app
-    ├── error.middleware.ts  # AppError handler
+    ├── error.middleware.ts  # filet de sécurité 500
     └── index.ts             # entrypoint
     prisma/
     ├── schema.prisma
@@ -56,8 +56,8 @@ Tags : `name`, `icon`, `color`, `isDefault`, `userId`. Tags `isDefault: true` pa
 
 ## Patterns serveur
 
-- **`taskInclude` + `serialize()`** : la relation `Task ↔ Tag` passe par `TaskTag`. Toujours utiliser `taskInclude` et `serialize()` — ne jamais retourner le modèle Prisma brut.
-- **`AppError`** : lever `new AppError(message, statusCode)` pour toute erreur métier.
+- **`taskInclude` + `serialize()`** (dans `tasks/tasks.router.ts`) : la relation `Task ↔ Tag` passe par `TaskTag`. Toujours utiliser `taskInclude` et `serialize()` — ne jamais retourner le modèle Prisma brut.
+- **`AppError`** : `new AppError(message, code)` où `code` est une union de chaînes, pas un code HTTP. Deux définitions locales cohabitent (`auth/auth.service.ts`, `feedback/feedback.service.ts`) et sont attrapées par leurs routers ; `error.middleware.ts` est un filet de sécurité qui renvoie 500 pour tout le reste. `tasks.router.ts` gère ses erreurs inline (404 sur ownership, pas 403).
 - Ne jamais modifier manuellement un fichier de migration déjà commité.
 
 ## Auth
@@ -101,3 +101,13 @@ npm run build && npm run lint                  # build + lint
 - `## Découvertes inattendues` — ce qui a bloqué ou surpris + impact pour les features suivantes
 
 Puis mettre à jour les mémoires dans `/home/elrik/.claude/projects/-home-elrik-Repos-oracle/memory/`.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

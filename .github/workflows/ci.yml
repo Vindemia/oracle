@@ -63,6 +63,10 @@ jobs:
           JWT_REFRESH_SECRET: ci_test_refresh_secret_minimum_32_characters_long
         run: npm test
 
+      - name: Test client
+        working-directory: packages/client
+        run: npm test
+
       - name: Build client
         working-directory: packages/client
         env:

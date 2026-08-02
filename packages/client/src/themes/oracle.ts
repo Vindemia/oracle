@@ -91,5 +91,8 @@ export const oracleTheme: Theme = {
     quadrantStarsLabel: 'Les Étoiles',
     quadrantWindLabel: 'Le Vent',
     quadrantMistLabel: 'La Brume',
+
+    step: 'fragment',
+    newStepPlaceholder: 'Nouveau fragment…',
   },
 };

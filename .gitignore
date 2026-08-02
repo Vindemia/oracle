@@ -23,3 +23,7 @@ packages/server/prisma/generated/
 # OS
 .DS_Store
 Thumbs.db
+
+# Outillage local (Claude Code, graphe graphify)
+.claude/
+graphify-out/

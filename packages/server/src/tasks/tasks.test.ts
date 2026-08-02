@@ -8,11 +8,19 @@ vi.mock('../lib/prisma.js', () => ({
     task: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      findUniqueOrThrow: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
       aggregate: vi.fn(),
       groupBy: vi.fn(),
+    },
+    taskStep: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
     $transaction: vi.fn(),
   },
@@ -23,6 +31,17 @@ const { default: prismaMock } = await import('../lib/prisma.js');
 const USER_ID = 'user-1';
 const OTHER_USER_ID = 'user-2';
 const token = generateAccessToken(USER_ID);
+
+function mockStep(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'step-1',
+    title: 'Ouvrir le dossier',
+    done: false,
+    position: 0,
+    taskId: 'task-1',
+    ...overrides,
+  };
+}
 
 function mockTask(overrides: Record<string, unknown> = {}) {
   return {
@@ -40,6 +59,7 @@ function mockTask(overrides: Record<string, unknown> = {}) {
     updatedAt: new Date(),
     completedAt: null,
     tags: [],
+    steps: [],
     ...overrides,
   };
 }
@@ -465,5 +485,195 @@ describe('POST /api/tasks/:id/unplan', () => {
 
     expect(res.status).toBe(404);
     expect(prismaMock.task.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('GET /api/tasks — steps', () => {
+  it('retourne les steps triés par position', async () => {
+    const tasks = [
+      mockTask({
+        steps: [mockStep({ id: 's1', position: 0 }), mockStep({ id: 's2', title: 'Suite', position: 1 })],
+      }),
+    ];
+    vi.mocked(prismaMock.task.findMany).mockResolvedValue(tasks as never);
+
+    const res = await request(app)
+      .get('/api/tasks')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body[0].steps).toEqual([
+      { id: 's1', title: 'Ouvrir le dossier', done: false, position: 0 },
+      { id: 's2', title: 'Suite', done: false, position: 1 },
+    ]);
+    // Prisma étant mocké, l'assertion ci-dessus ne prouve pas le tri : elle vérifie
+    // que le mock ressort tel quel. C'est la requête qui doit porter l'orderBy.
+    expect(vi.mocked(prismaMock.task.findMany)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          steps: { orderBy: { position: 'asc' } },
+        }),
+      }),
+    );
+  });
+});
+
+describe('POST /api/tasks/:id/steps', () => {
+  it('ajoute un fragment en fin de liste', async () => {
+    const existing = mockTask();
+    const existingSteps = [mockStep({ id: 's1', position: 0 }), mockStep({ id: 's2', position: 1 })];
+    const updated = mockTask({ steps: [...existingSteps, mockStep({ id: 's3', position: 2 })] });
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(existing as never);
+    vi.mocked(prismaMock.taskStep.findMany).mockResolvedValue(existingSteps as never);
+    vi.mocked(prismaMock.taskStep.create).mockResolvedValue(mockStep({ id: 's3', position: 2 }) as never);
+    vi.mocked(prismaMock.task.findUniqueOrThrow).mockResolvedValue(updated as never);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/steps')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'Nouveau fragment' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.steps).toHaveLength(3);
+    expect(vi.mocked(prismaMock.taskStep.create)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ title: 'Nouveau fragment', position: 2, taskId: 'task-1' }),
+      }),
+    );
+  });
+
+  it('400 au-delà de 10 fragments', async () => {
+    const existing = mockTask();
+    const tenSteps = Array.from({ length: 10 }, (_, i) => mockStep({ id: `s${String(i)}`, position: i }));
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(existing as never);
+    vi.mocked(prismaMock.taskStep.findMany).mockResolvedValue(tenSteps as never);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/steps')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'Un fragment de trop' });
+
+    expect(res.status).toBe(400);
+    expect(prismaMock.taskStep.create).not.toHaveBeenCalled();
+  });
+
+  it('400 si title vide', async () => {
+    const res = await request(app)
+      .post('/api/tasks/task-1/steps')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: '' });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('404 si la tâche appartient à un autre utilisateur', async () => {
+    const otherTask = mockTask({ userId: OTHER_USER_ID });
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(otherTask as never);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/steps')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'Hack' });
+
+    expect(res.status).toBe(404);
+    expect(prismaMock.taskStep.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('PATCH /api/tasks/:id/steps/:stepId', () => {
+  it('coche un fragment (done)', async () => {
+    const existing = mockTask();
+    const step = mockStep({ done: false });
+    const updatedTask = mockTask({ steps: [mockStep({ done: true })] });
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(existing as never);
+    vi.mocked(prismaMock.taskStep.findUnique).mockResolvedValue(step as never);
+    vi.mocked(prismaMock.taskStep.update).mockResolvedValue(mockStep({ done: true }) as never);
+    vi.mocked(prismaMock.task.findUniqueOrThrow).mockResolvedValue(updatedTask as never);
+
+    const res = await request(app)
+      .patch('/api/tasks/task-1/steps/step-1')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ done: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body.steps[0].done).toBe(true);
+    expect(vi.mocked(prismaMock.taskStep.update)).toHaveBeenCalledWith({
+      where: { id: 'step-1' },
+      data: { done: true },
+    });
+  });
+
+  it('404 sur un step orphelin (appartenant à une autre tâche)', async () => {
+    const existing = mockTask();
+    const orphanStep = mockStep({ taskId: 'other-task' });
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(existing as never);
+    vi.mocked(prismaMock.taskStep.findUnique).mockResolvedValue(orphanStep as never);
+
+    const res = await request(app)
+      .patch('/api/tasks/task-1/steps/step-1')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ done: true });
+
+    expect(res.status).toBe(404);
+    expect(prismaMock.taskStep.update).not.toHaveBeenCalled();
+  });
+
+  it('404 si la tâche appartient à un autre utilisateur', async () => {
+    const otherTask = mockTask({ userId: OTHER_USER_ID });
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(otherTask as never);
+
+    const res = await request(app)
+      .patch('/api/tasks/task-1/steps/step-1')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ done: true });
+
+    expect(res.status).toBe(404);
+    expect(prismaMock.taskStep.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('DELETE /api/tasks/:id/steps/:stepId', () => {
+  it('retire le fragment et retourne la tâche sérialisée', async () => {
+    const existing = mockTask();
+    const step = mockStep();
+    const updatedTask = mockTask({ steps: [] });
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(existing as never);
+    vi.mocked(prismaMock.taskStep.findUnique).mockResolvedValue(step as never);
+    vi.mocked(prismaMock.taskStep.delete).mockResolvedValue(step as never);
+    vi.mocked(prismaMock.task.findUniqueOrThrow).mockResolvedValue(updatedTask as never);
+
+    const res = await request(app)
+      .delete('/api/tasks/task-1/steps/step-1')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.steps).toEqual([]);
+    expect(vi.mocked(prismaMock.taskStep.delete)).toHaveBeenCalledWith({ where: { id: 'step-1' } });
+  });
+
+  it('404 sur un step orphelin (appartenant à une autre tâche)', async () => {
+    const existing = mockTask();
+    const orphanStep = mockStep({ taskId: 'other-task' });
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(existing as never);
+    vi.mocked(prismaMock.taskStep.findUnique).mockResolvedValue(orphanStep as never);
+
+    const res = await request(app)
+      .delete('/api/tasks/task-1/steps/step-1')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+    expect(prismaMock.taskStep.delete).not.toHaveBeenCalled();
+  });
+
+  it('404 si la tâche appartient à un autre utilisateur', async () => {
+    const otherTask = mockTask({ userId: OTHER_USER_ID });
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(otherTask as never);
+
+    const res = await request(app)
+      .delete('/api/tasks/task-1/steps/step-1')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+    expect(prismaMock.taskStep.delete).not.toHaveBeenCalled();
   });
 });

@@ -35,7 +35,7 @@ function focusTaskInput() {
 }
 
 function FocusRoute() {
-  const { tasks, isLoading, refresh, reorderTasks, planTask, completeTask } = useTasks();
+  const { tasks, isLoading, refresh, reorderTasks, planTask, completeTask, toggleStep } = useTasks();
   const { tags: allTags } = useTags();
   const { setHasFireTasks } = useFireAlert();
 
@@ -71,13 +71,14 @@ function FocusRoute() {
         onPass={handlePass}
         onComplete={completeTask}
         onPassFire={handlePassFire}
+        onToggleStep={toggleStep}
       />
     </AppShell>
   );
 }
 
 function MatrixRoute() {
-  const { tasks, isLoading, error, refresh, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask, reorderTasks, unplanTask, planTask } = useTasks();
+  const { tasks, isLoading, error, refresh, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask, reorderTasks, unplanTask, planTask, addStep, toggleStep, removeStep } = useTasks();
   const { tags: allTags } = useTags();
   const { setHasFireTasks } = useFireAlert();
 
@@ -97,6 +98,9 @@ function MatrixRoute() {
         onUpdateTags={updateTaskTags}
         onDelete={deleteTask}
         onReorder={reorderTasks}
+        onAddStep={addStep}
+        onToggleStep={toggleStep}
+        onRemoveStep={removeStep}
         onUnplan={unplanTask}
         onPlan={planTask}
         onFocusInput={focusTaskInput}

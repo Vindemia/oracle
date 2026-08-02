@@ -71,10 +71,23 @@ model Task {
   userId      String
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   tags        TaskTag[]
+  steps       TaskStep[]
 
   @@index([userId, status])
   @@index([userId, quadrant])
   @@index([userId, quadrant, position])
+}
+
+// Fragments de vision (v3-01) : micro-étapes cochables d'une tâche.
+model TaskStep {
+  id       String  @id @default(uuid())
+  title    String
+  done     Boolean @default(false)
+  position Int     @default(0)
+  taskId   String
+  task     Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, position])
 }
 
 model Tag {

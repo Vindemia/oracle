@@ -44,7 +44,10 @@ export type TermKey =
   | 'quadrantFireLabel'
   | 'quadrantStarsLabel'
   | 'quadrantWindLabel'
-  | 'quadrantMistLabel';
+  | 'quadrantMistLabel'
+  // Fragments (v3-01) — micro-étapes cochables d'une tâche
+  | 'step'
+  | 'newStepPlaceholder';
 
 export interface Theme {
   /** Identifiant stable — persisté côté serveur (`User.themeId`) et en localStorage. */
