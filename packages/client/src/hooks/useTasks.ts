@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client.js';
 import type { Quadrant, Tag, Task } from '../types/index.js';
+import { todayKey } from '../utils/dates.js';
 
 interface UseTasksResult {
   tasks: Task[];
@@ -16,6 +17,8 @@ interface UseTasksResult {
   planTask: (id: string, date: string) => Promise<void>;
   unplanTask: (id: string) => Promise<void>;
   reactivateTask: (id: string) => Promise<void>;
+  starTask: (id: string) => Promise<void>;
+  unstarTask: (id: string) => Promise<void>;
   addStep: (taskId: string, title: string) => Promise<void>;
   toggleStep: (taskId: string, stepId: string) => Promise<void>;
   removeStep: (taskId: string, stepId: string) => Promise<void>;
@@ -191,6 +194,31 @@ export function useTasks(): UseTasksResult {
     }
   }, [rawTasks]);
 
+  // Étoiles du jour (v3-03). La limite de 3 est arbitrée par le serveur : en cas
+  // de refus, le rollback remet la vision non étoilée et l'erreur remonte.
+  const starTask = useCallback(async (id: string) => {
+    const prev = rawTasks;
+    setRawTasks((ts) => ts.map((task) => task.id === id ? { ...task, starredOn: todayKey() } : task));
+    try {
+      const updated = await api.post<Task>('/tasks/' + id + '/star', {});
+      setRawTasks((ts) => ts.map((task) => task.id === id ? updated : task));
+    } catch (err) {
+      setRawTasks(prev);
+      throw err;
+    }
+  }, [rawTasks]);
+
+  const unstarTask = useCallback(async (id: string) => {
+    const prev = rawTasks;
+    setRawTasks((ts) => ts.map((task) => task.id === id ? { ...task, starredOn: null } : task));
+    try {
+      await api.post<Task>('/tasks/' + id + '/unstar', {});
+    } catch (err) {
+      setRawTasks(prev);
+      throw err;
+    }
+  }, [rawTasks]);
+
   // Position provisoire — écrasée par la réponse serveur (id + position définitifs)
   // dès que la requête aboutit ; cf. rollback identique aux autres mutations.
   const addStep = useCallback(async (taskId: string, title: string) => {
@@ -240,6 +268,7 @@ export function useTasks(): UseTasksResult {
     tasks, isLoading, error, refresh: fetchTasks,
     completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask,
     reorderTasks, planTask, unplanTask, reactivateTask,
+    starTask, unstarTask,
     addStep, toggleStep, removeStep,
   };
 }

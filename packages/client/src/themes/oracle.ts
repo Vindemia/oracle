@@ -59,6 +59,8 @@ export const oracleTheme: Theme = {
     '--shadow-sm': '0 1px 3px rgba(0, 0, 0, 0.4)',
     '--shadow-md': '0 4px 12px rgba(0, 0, 0, 0.5)',
     '--shadow-glow': '0 0 20px rgba(139, 92, 246, 0.25)',
+    // Halo des Étoiles du jour (v3-03)
+    '--shadow-star': '0 0 18px rgba(201, 168, 76, 0.45)',
   },
   lexicon: {
     task: 'vision',
@@ -94,5 +96,9 @@ export const oracleTheme: Theme = {
 
     step: 'fragment',
     newStepPlaceholder: 'Nouveau fragment…',
+
+    dailyStar: 'Étoile du jour',
+    dailyStarPlural: 'Étoiles du jour',
+    oracleWord: "Le mot de l'Oracle",
   },
 };

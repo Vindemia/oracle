@@ -48,17 +48,24 @@ export function reminderPush(themeId: ThemeId, taskTitle: string, time: string):
 export interface DailySummaryInput {
   fireCount: number;
   plannedToday: number;
+  /** Murmures en attente de tri — porte d'entrée du Rituel de l'Aube (v3-03). */
+  whisperCount?: number;
 }
 
 /** Résumé matinal — `null` si rien à annoncer (le scheduler n'envoie alors rien). */
 export function dailySummaryPush(
   themeId: ThemeId,
-  { fireCount, plannedToday }: DailySummaryInput,
+  { fireCount, plannedToday, whisperCount = 0 }: DailySummaryInput,
 ): ReminderPushContent | null {
-  if (fireCount === 0 && plannedToday === 0) return null;
+  if (fireCount === 0 && plannedToday === 0 && whisperCount === 0) return null;
 
   const pieces: string[] = [];
   if (themeId === 'oracle') {
+    if (whisperCount > 0) {
+      pieces.push(
+        `${whisperCount.toString()} murmure${plural(whisperCount)} attend${whisperCount > 1 ? 'ent' : ''}`,
+      );
+    }
     if (fireCount > 0) {
       pieces.push(`${fireCount.toString()} vision${plural(fireCount)} dans le Brasier`);
     }
@@ -70,6 +77,9 @@ export function dailySummaryPush(
     return { title: 'Les présages du jour', body: pieces.join(' · ') + '.' };
   }
 
+  if (whisperCount > 0) {
+    pieces.push(`${whisperCount.toString()} note${plural(whisperCount)} à trier`);
+  }
   if (fireCount > 0) {
     pieces.push(
       `${fireCount.toString()} tâche${plural(fireCount)} urgente${plural(fireCount)} et importante${plural(fireCount)}`,

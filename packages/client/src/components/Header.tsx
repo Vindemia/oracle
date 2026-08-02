@@ -1,10 +1,11 @@
-import { ScrollIcon, GearIcon, SignOutIcon, QuestionIcon, FeatherIcon, WindIcon } from '@phosphor-icons/react';
+import { ScrollIcon, GearIcon, SignOutIcon, QuestionIcon, FeatherIcon, WindIcon, SunHorizonIcon } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useFireAlert } from '../context/FireAlertContext.js';
 import { useTheme } from '../context/ThemeContext.js';
 import { useWhispers } from '../hooks/useWhispers.js';
+import { useRitual } from '../hooks/useRitual.js';
 import { HelpDrawer } from './HelpDrawer.js';
 import { FeedbackOverlay } from './FeedbackOverlay.js';
 import { WhisperCapture } from './WhisperCapture.js';
@@ -26,6 +27,9 @@ export function Header() {
   const { hasFireTasks } = useFireAlert();
   const { t } = useTheme();
   const { whispers, capture, reveal, dismiss } = useWhispers();
+  // Le rappel du rituel disparaît une fois le rituel fait — jamais d'insistance
+  // intra-journée (v3-03).
+  const { status: ritualStatus } = useRitual();
   const [helpOpen, setHelpOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [whisperCaptureOpen, setWhisperCaptureOpen] = useState(false);
@@ -120,6 +124,17 @@ export function Header() {
 
         <div className={styles.right}>
           <div className={styles.actions}>
+            {ritualStatus !== null && !ritualStatus.ritualDoneToday && (
+              <button
+                className={[styles.iconBtn, location.pathname === '/ritual' ? styles.active : null].filter(Boolean).join(' ')}
+                onClick={() => { void navigate('/ritual'); }}
+                aria-label={t('morningRitual')}
+                title={t('morningRitual')}
+              >
+                <SunHorizonIcon size={20} weight={location.pathname === '/ritual' ? 'duotone' : 'regular'} />
+                <span className={styles.dot} aria-hidden="true" />
+              </button>
+            )}
             <button
               className={[styles.iconBtn, location.pathname === '/history' ? styles.active : null].filter(Boolean).join(' ')}
               onClick={() => { toggle('/history'); }}

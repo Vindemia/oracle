@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { MouseEvent, TouchEvent } from 'react';
 import type { Tag, Task } from '../types/index.js';
-import { formatRelativeDate } from '../utils/dates.js';
+import { formatRelativeDate, isStarredToday } from '../utils/dates.js';
 import { hexToRgba } from '../utils/colors.js';
 import { TagSelector } from './TagSelector.js';
 import { buildGoogleCalUrl, downloadIcal } from './CalendarButton.js';
@@ -234,7 +234,11 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onReactivate,
   return (
     <div
       ref={cardRef}
-      className={[styles.card, isMist ? styles.mist : undefined].filter(Boolean).join(' ')}
+      className={[
+        styles.card,
+        isMist ? styles.mist : undefined,
+        isStarredToday(task) ? styles.starred : undefined,
+      ].filter(Boolean).join(' ')}
       style={{ borderLeftColor: quadrantColorVar }}
       onContextMenu={handleContextMenu}
       onTouchStart={handleTouchStart}

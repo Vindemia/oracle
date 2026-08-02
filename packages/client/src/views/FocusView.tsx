@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext.js';
 import { useToast } from '../context/ToastContext.js';
 import { getQuadrantTermKey } from '../utils/quadrant.js';
 import { getCompleteToast } from '../utils/animations.js';
+import { isStarredToday } from '../utils/dates.js';
 import styles from './FocusView.module.css';
 
 // Annulation (v3-17) : même fenêtre de rattrapage que dans la Matrice.
@@ -50,9 +51,10 @@ export function FocusView({ tasks, isLoading, allTags: _allTags, onPlan, onPass,
     .filter((t) => t.quadrant === 'STARS' && t.status === 'ACTIVE' && t.plannedFor === null)
     .sort((a, b) => a.position - b.position);
 
+  // Les Étoiles du jour (v3-03) passent devant : ce sont celles choisies au Rituel de l'Aube.
   const fireTasks = tasks
     .filter((t) => t.quadrant === 'FIRE' && t.status === 'ACTIVE')
-    .sort((a, b) => a.position - b.position);
+    .sort((a, b) => Number(isStarredToday(b)) - Number(isStarredToday(a)) || a.position - b.position);
 
   const phase: 'planning' | 'action' | 'done' =
     unplannedStars.length > 0 ? 'planning'
