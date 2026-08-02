@@ -17,6 +17,7 @@ import { MatrixView } from './views/MatrixView.js';
 import { SettingsPage } from './pages/SettingsPage.js';
 import { HistoryView } from './views/HistoryView.js';
 import { FocusView } from './views/FocusView.js';
+import { RitualView } from './views/RitualView.js';
 import { useTasks } from './hooks/useTasks.js';
 import { useTags } from './hooks/useTags.js';
 
@@ -77,6 +78,11 @@ function FocusRoute() {
   );
 }
 
+function RitualRoute() {
+  const { tasks, starTask, unstarTask } = useTasks();
+  return <RitualView tasks={tasks} onStar={starTask} onUnstar={unstarTask} />;
+}
+
 function MatrixRoute() {
   const { tasks, isLoading, error, refresh, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask, reorderTasks, unplanTask, planTask, addStep, toggleStep, removeStep } = useTasks();
   const { tags: allTags } = useTags();
@@ -130,6 +136,7 @@ export default function App() {
               >
                 <Route path="/" element={<MatrixRoute />} />
                 <Route path="/focus" element={<FocusRoute />} />
+                <Route path="/ritual" element={<RitualRoute />} />
                 <Route path="/history" element={<HistoryView />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>

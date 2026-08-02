@@ -1,3 +1,14 @@
+/** dateKey locale du jour (`YYYY-MM-DD`) — même convention que le serveur (v3-03). */
+export function todayKey(now = new Date()): string {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${now.getFullYear().toString()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+/** Une Étoile du jour n'est jamais nettoyée côté serveur : on compare à aujourd'hui. */
+export function isStarredToday(task: { starredOn: string | null }, now = new Date()): boolean {
+  return task.starredOn === todayKey(now);
+}
+
 export function formatRelativeDate(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();

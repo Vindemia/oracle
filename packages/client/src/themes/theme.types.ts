@@ -47,7 +47,11 @@ export type TermKey =
   | 'quadrantMistLabel'
   // Fragments (v3-01) — micro-étapes cochables d'une tâche
   | 'step'
-  | 'newStepPlaceholder';
+  | 'newStepPlaceholder'
+  // Rituel de l'Aube (v3-03) — check-in quotidien
+  | 'dailyStar'
+  | 'dailyStarPlural'
+  | 'oracleWord';
 
 export interface Theme {
   /** Identifiant stable — persisté côté serveur (`User.themeId`) et en localStorage. */
