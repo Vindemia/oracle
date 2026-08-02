@@ -61,6 +61,8 @@ export const neutralTheme: Theme = {
     '--shadow-sm': '0 1px 2px rgba(20, 18, 14, 0.06)',
     '--shadow-md': '0 4px 10px rgba(20, 18, 14, 0.08)',
     '--shadow-glow': 'none',
+    // Halo des priorités du jour (v3-03) — discret, sobre comme le reste du thème
+    '--shadow-star': '0 0 0 2px rgba(63, 109, 99, 0.55)',
   },
   lexicon: {
     task: 'tâche',
@@ -96,5 +98,9 @@ export const neutralTheme: Theme = {
 
     step: 'étape',
     newStepPlaceholder: 'Nouvelle étape…',
+
+    dailyStar: 'priorité du jour',
+    dailyStarPlural: 'priorités du jour',
+    oracleWord: 'Ton intention',
   },
 };

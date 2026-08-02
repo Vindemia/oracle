@@ -6,6 +6,7 @@ import { ThemeProvider } from '../context/ThemeContext.js';
 import { ToastProvider } from '../context/ToastContext.js';
 import { TaskCard } from './TaskCard.js';
 import type { Task } from '../types/index.js';
+import { todayKey } from '../utils/dates.js';
 
 // TaskCard consomme useToast() (toast d'erreur sur l'ajout de fragment) en plus
 // de useTheme() — le helper renderWithProviders ne fournit pas ToastProvider
@@ -40,6 +41,7 @@ const baseTask: Task = {
   completedAt: null,
   plannedFor: null,
   notes: null,
+  starredOn: null,
 };
 
 function noop() {
@@ -98,5 +100,34 @@ describe('TaskCard — fragments', () => {
     // dans l'éditeur complet) reste absent du DOM. Sans le stopPropagation sur
     // la puce, le clic remonterait au conteneur et déplierait la carte.
     expect(screen.queryByText('Fragment déjà fait')).not.toBeInTheDocument();
+  });
+});
+
+describe('TaskCard — Étoile du jour (v3-03)', () => {
+  const renderWithStar = (starredOn: string | null) =>
+    renderTaskCard(
+      <TaskCard
+        task={{ ...baseTask, starredOn }}
+        allTags={[]}
+        onComplete={noop}
+        onEliminate={noop}
+        onUpdate={noop}
+        onUpdateTags={noop}
+        onDelete={noop}
+        onAddStep={noop}
+        onToggleStep={noop}
+        onRemoveStep={noop}
+      />,
+    );
+
+  it('porte le halo doré quand la vision est étoilée aujourd\'hui', () => {
+    const { container } = renderWithStar(todayKey());
+    // CSS Modules : les classes sont transformées, on cherche donc le suffixe.
+    expect(container.querySelector('[class*="starred"]')).not.toBeNull();
+  });
+
+  it('ne porte pas le halo pour une étoile d\'un jour passé', () => {
+    const { container } = renderWithStar('2020-01-01');
+    expect(container.querySelector('[class*="starred"]')).toBeNull();
   });
 });

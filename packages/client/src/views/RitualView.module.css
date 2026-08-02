@@ -1,0 +1,148 @@
+.ritual {
+  min-height: calc(100vh - 60px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem 1rem 3rem;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--accent-gold);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+/* Chaque étape entre en fondu — le mouvement est un feedback, pas un décor. */
+.stage {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  animation: stage-in 320ms ease-out;
+}
+
+@keyframes stage-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage { animation: none; }
+}
+
+.stepHint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.counter {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--accent-gold);
+}
+
+.whisper {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.card:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cardStarred {
+  border-color: var(--accent-gold);
+  box-shadow: var(--shadow-star);
+}
+
+.cardTitle {
+  flex: 1;
+}
+
+.cardMark {
+  color: var(--accent-gold);
+}
+
+.empty {
+  margin: 0;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.word {
+  margin: 0;
+  padding: 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.primaryBtn {
+  margin-top: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--accent-gold);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.skipBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+}

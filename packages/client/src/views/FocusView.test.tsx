@@ -20,6 +20,7 @@ function makeFireTask(steps: Task['steps']): Task {
     completedAt: null,
     plannedFor: null,
     notes: null,
+    starredOn: null,
   };
 }
 

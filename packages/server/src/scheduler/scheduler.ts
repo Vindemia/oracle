@@ -5,6 +5,7 @@ import { MAX_LEAD_MINUTES } from '../push/push.router.js';
 import { tickFeedbackSync } from '../feedback/feedback.sync.js';
 import { purgeExpiredPasswordResetTokens } from '../auth/auth.service.js';
 import { dailySummaryPush, reminderPush, resolveThemeId, staleReminderPush } from '../lib/lexicon.js';
+import { localParts, localTime } from '../lib/dates.js';
 
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
@@ -12,49 +13,6 @@ const DAY = 24 * 60 * MINUTE;
 // Lookback de requête : couvre les rappels dont l'échéance est passée pendant
 // un downtime (arrêt du process, déploiement…) pour ne pas les perdre.
 const LOOKBACK_MINUTES = 10;
-
-interface LocalParts {
-  dateKey: string;
-  hour: number;
-}
-
-/** Exécute `fn` dans le fuseau demandé, avec repli sur Europe/Paris si invalide. */
-function withTimezoneFallback<T>(timeZone: string, fn: (tz: string) => T): T {
-  try {
-    return fn(timeZone);
-  } catch {
-    return fn('Europe/Paris');
-  }
-}
-
-/** Date (YYYY-MM-DD) et heure locales dans le fuseau de l'utilisateur. */
-function localParts(date: Date, timeZone: string): LocalParts {
-  const options = {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    hourCycle: 'h23',
-  } as const;
-  return withTimezoneFallback(timeZone, (tz) => {
-    const fmt = new Intl.DateTimeFormat('fr-CA', { timeZone: tz, ...options });
-    const parts = fmt.formatToParts(date);
-    const get = (type: Intl.DateTimeFormatPartTypes) =>
-      parts.find((p) => p.type === type)?.value ?? '00';
-    return {
-      dateKey: `${get('year')}-${get('month')}-${get('day')}`,
-      hour: Number(get('hour')),
-    };
-  });
-}
-
-function localTime(date: Date, timeZone: string): string {
-  return withTimezoneFallback(timeZone, (tz) =>
-    new Intl.DateTimeFormat('fr-FR', { timeZone: tz, hour: '2-digit', minute: '2-digit' }).format(
-      date,
-    ),
-  );
-}
 
 /**
  * Rappels d'échéance : présage pour chaque vision dont `plannedFor` tombe
@@ -180,10 +138,11 @@ async function sendDailySummary(
 ): Promise<void> {
   // Visions planifiées « aujourd'hui » au sens du fuseau de l'utilisateur :
   // fenêtre large en UTC puis filtrage sur la date locale.
-  const [fireCount, planned] = await Promise.all([
+  const [fireCount, whisperCount, planned] = await Promise.all([
     prisma.task.count({
       where: { userId, status: 'ACTIVE', quadrant: 'FIRE' },
     }),
+    prisma.whisper.count({ where: { userId } }),
     prisma.task.findMany({
       where: {
         userId,
@@ -200,13 +159,14 @@ async function sendDailySummary(
     (t) => t.plannedFor !== null && localParts(t.plannedFor, timeZone).dateKey === dateKey,
   ).length;
 
-  const content = dailySummaryPush(themeId, { fireCount, plannedToday });
+  const content = dailySummaryPush(themeId, { fireCount, plannedToday, whisperCount });
   if (!content) return;
 
   await sendToUser(userId, {
     title: content.title,
     body: content.body,
-    url: '/focus',
+    // Le résumé matinal est la porte d'entrée du Rituel de l'Aube (v3-03).
+    url: '/ritual',
     tag: 'daily-summary',
   });
 }

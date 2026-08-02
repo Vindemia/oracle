@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
 import { generateAccessToken } from '../auth/auth.service.js';
+import { todayKey } from '../lib/dates.js';
 
 vi.mock('../lib/prisma.js', () => ({
   default: {
@@ -14,6 +15,7 @@ vi.mock('../lib/prisma.js', () => ({
       delete: vi.fn(),
       aggregate: vi.fn(),
       groupBy: vi.fn(),
+      count: vi.fn(),
     },
     taskStep: {
       findMany: vi.fn(),
@@ -21,6 +23,12 @@ vi.mock('../lib/prisma.js', () => ({
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+    },
+    user: {
+      findUnique: vi.fn(),
+    },
+    activityDay: {
+      upsert: vi.fn(),
     },
     $transaction: vi.fn(),
   },
@@ -31,6 +39,8 @@ const { default: prismaMock } = await import('../lib/prisma.js');
 const USER_ID = 'user-1';
 const OTHER_USER_ID = 'user-2';
 const token = generateAccessToken(USER_ID);
+const TIMEZONE = 'Europe/Paris';
+const TODAY = todayKey(TIMEZONE);
 
 function mockStep(overrides: Record<string, unknown> = {}) {
   return {
@@ -58,6 +68,7 @@ function mockTask(overrides: Record<string, unknown> = {}) {
     createdAt: new Date(),
     updatedAt: new Date(),
     completedAt: null,
+    starredOn: null,
     tags: [],
     steps: [],
     ...overrides,
@@ -69,6 +80,8 @@ beforeEach(() => {
   // promoteDueTasks() (filet paresseux du GET /tasks) s'appuie sur groupBy ;
   // par défaut aucune tâche en retard (le test qui l'exerce le mock différemment).
   vi.mocked(prismaMock.task.groupBy).mockResolvedValue([] as never);
+  // Fuseau de l'utilisateur — lu pour la dateKey des Étoiles et des jours actifs.
+  vi.mocked(prismaMock.user.findUnique).mockResolvedValue({ timezone: TIMEZONE } as never);
 });
 
 describe('POST /api/tasks', () => {
@@ -675,5 +688,152 @@ describe('DELETE /api/tasks/:id/steps/:stepId', () => {
 
     expect(res.status).toBe(404);
     expect(prismaMock.taskStep.delete).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/tasks/:id/star — Étoiles du jour (v3-03)', () => {
+  it('pose starredOn à la dateKey locale du jour', async () => {
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(mockTask() as never);
+    vi.mocked(prismaMock.task.count).mockResolvedValue(0 as never);
+    vi.mocked(prismaMock.task.update).mockResolvedValue(mockTask({ starredOn: TODAY }) as never);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/star')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.starredOn).toBe(TODAY);
+    expect(prismaMock.task.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { starredOn: TODAY } }),
+    );
+  });
+
+  it('refuse la 4e étoile du jour', async () => {
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(mockTask() as never);
+    vi.mocked(prismaMock.task.count).mockResolvedValue(3 as never);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/star')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(400);
+    expect(prismaMock.task.update).not.toHaveBeenCalled();
+    // Le décompte porte bien sur les étoiles du jour, pas sur toutes les tâches.
+    expect(prismaMock.task.count).toHaveBeenCalledWith({
+      where: { userId: USER_ID, starredOn: TODAY },
+    });
+  });
+
+  it('re-étoiler une vision déjà étoilée aujourd\'hui ne consomme pas une place', async () => {
+    // 3 étoiles posées, dont celle-ci : la limite ne doit pas se déclencher.
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(
+      mockTask({ starredOn: TODAY }) as never,
+    );
+    vi.mocked(prismaMock.task.count).mockResolvedValue(3 as never);
+    vi.mocked(prismaMock.task.update).mockResolvedValue(mockTask({ starredOn: TODAY }) as never);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/star')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(prismaMock.task.count).not.toHaveBeenCalled();
+  });
+
+  it('une étoile d\'un jour passé ne bloque pas une nouvelle étoile', async () => {
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(
+      mockTask({ starredOn: '2020-01-01' }) as never,
+    );
+    vi.mocked(prismaMock.task.count).mockResolvedValue(0 as never);
+    vi.mocked(prismaMock.task.update).mockResolvedValue(mockTask({ starredOn: TODAY }) as never);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/star')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.starredOn).toBe(TODAY);
+  });
+
+  it('404 si la tâche appartient à un autre utilisateur', async () => {
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(
+      mockTask({ userId: OTHER_USER_ID }) as never,
+    );
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/star')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+    expect(prismaMock.task.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/tasks/:id/unstar', () => {
+  it('libère la place en remettant starredOn à null', async () => {
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(
+      mockTask({ starredOn: TODAY }) as never,
+    );
+    vi.mocked(prismaMock.task.update).mockResolvedValue(mockTask() as never);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/unstar')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.starredOn).toBeNull();
+    expect(prismaMock.task.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { starredOn: null } }),
+    );
+  });
+
+  it('404 si la tâche appartient à un autre utilisateur', async () => {
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(
+      mockTask({ userId: OTHER_USER_ID }) as never,
+    );
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/unstar')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+    expect(prismaMock.task.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('Jour actif (v3-03)', () => {
+  it('compléter une vision enregistre le jour actif', async () => {
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(mockTask() as never);
+    vi.mocked(prismaMock.task.update).mockResolvedValue(mockTask({ status: 'DONE' }) as never);
+    vi.mocked(prismaMock.activityDay.upsert).mockResolvedValue({} as never);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/complete')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    // Enregistrement en arrière-plan : on laisse la microtâche se dérouler.
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(prismaMock.activityDay.upsert).toHaveBeenCalledWith({
+      where: { userId_dateKey: { userId: USER_ID, dateKey: TODAY } },
+      create: { userId: USER_ID, dateKey: TODAY },
+      update: {},
+    });
+  });
+
+  it('un jour actif en échec ne fait pas échouer la complétion', async () => {
+    vi.mocked(prismaMock.task.findUnique).mockResolvedValue(mockTask() as never);
+    vi.mocked(prismaMock.task.update).mockResolvedValue(mockTask({ status: 'DONE' }) as never);
+    vi.mocked(prismaMock.activityDay.upsert).mockRejectedValue(new Error('db down') as never);
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const res = await request(app)
+      .post('/api/tasks/task-1/complete')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 });

@@ -14,6 +14,9 @@ vi.mock('../lib/prisma.js', () => ({
       update: vi.fn(),
       updateMany: vi.fn(),
     },
+    whisper: {
+      count: vi.fn(),
+    },
     passwordResetToken: {
       deleteMany: vi.fn(),
     },
@@ -59,6 +62,8 @@ function mockUser(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Murmures en attente — enrichissent le résumé matinal (v3-03) ; aucun par défaut.
+  vi.mocked(prismaMock.whisper.count).mockResolvedValue(0 as never);
 });
 
 describe('tickReminders', () => {
@@ -191,6 +196,41 @@ describe('tickDigests — résumé matinal', () => {
     expect(sendToUser).toHaveBeenCalledWith(
       'user-1',
       expect.objectContaining({ tag: 'daily-summary', title: 'Les présages du jour' }),
+    );
+  });
+
+  it('ouvre le Rituel de l\'Aube et annonce les murmures en attente (v3-03)', async () => {
+    const user = mockUser({ dailySummaryEnabled: true, dailySummaryHour: 8 });
+    vi.mocked(prismaMock.user.findMany).mockResolvedValue([user] as never);
+    vi.mocked(prismaMock.task.count).mockResolvedValue(2 as never);
+    vi.mocked(prismaMock.task.findMany).mockResolvedValue([] as never);
+    vi.mocked(prismaMock.whisper.count).mockResolvedValue(3 as never);
+    vi.mocked(prismaMock.user.updateMany).mockResolvedValue({ count: 1 } as never);
+
+    await tickDigests(NOW);
+
+    expect(sendToUser).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({
+        url: '/ritual',
+        body: expect.stringContaining('3 murmures attendent'),
+      }),
+    );
+  });
+
+  it('envoie le résumé pour des murmures seuls, sans vision à annoncer', async () => {
+    const user = mockUser({ dailySummaryEnabled: true, dailySummaryHour: 8 });
+    vi.mocked(prismaMock.user.findMany).mockResolvedValue([user] as never);
+    vi.mocked(prismaMock.task.count).mockResolvedValue(0 as never);
+    vi.mocked(prismaMock.task.findMany).mockResolvedValue([] as never);
+    vi.mocked(prismaMock.whisper.count).mockResolvedValue(1 as never);
+    vi.mocked(prismaMock.user.updateMany).mockResolvedValue({ count: 1 } as never);
+
+    await tickDigests(NOW);
+
+    expect(sendToUser).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ body: expect.stringContaining('1 murmure attend') }),
     );
   });
 

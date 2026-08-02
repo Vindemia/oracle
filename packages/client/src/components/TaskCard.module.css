@@ -547,3 +547,8 @@
 .modalBtnGhost:hover {
   color: var(--text-primary);
 }
+
+/* Étoile du jour (v3-03) — halo doré, choisi au Rituel de l'Aube. */
+.starred {
+  box-shadow: var(--shadow-star);
+}

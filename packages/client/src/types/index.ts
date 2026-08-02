@@ -45,6 +45,16 @@ export interface Task {
   completedAt: string | null;
   plannedFor: string | null;
   notes: string | null;
+  /** Étoile du jour (v3-03) : dateKey locale `YYYY-MM-DD`, ou `null`. */
+  starredOn: string | null;
+}
+
+/** État du Rituel de l'Aube pour la journée en cours (v3-03). */
+export interface RitualStatus {
+  ritualDoneToday: boolean;
+  whisperCount: number;
+  starredToday: Task[];
+  suggestions: Task[];
 }
 
 export interface Whisper {

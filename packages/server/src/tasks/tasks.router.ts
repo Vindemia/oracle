@@ -3,6 +3,7 @@ import { z } from 'zod';
 import prisma from '../lib/prisma.js';
 import { authMiddleware } from '../auth/auth.middleware.js';
 import { promoteDueTasks } from './promotion.js';
+import { markActiveDaySafe, userTodayKey } from '../lib/activity.js';
 import type { Prisma, Quadrant } from '@prisma/client';
 
 const router = Router();
@@ -263,6 +264,7 @@ router.post('/:id/complete', async (req, res) => {
       data: { status: 'DONE', completedAt: new Date() },
       include: taskInclude,
     });
+    markActiveDaySafe(req.userId);
     res.json(serialize(task));
   } catch {
     res.status(500).json({ error: 'Internal server error' });
@@ -282,6 +284,7 @@ router.post('/:id/eliminate', async (req, res) => {
       data: { status: 'ELIMINATED', completedAt: new Date() },
       include: taskInclude,
     });
+    markActiveDaySafe(req.userId);
     res.json(serialize(task));
   } catch {
     res.status(500).json({ error: 'Internal server error' });
@@ -349,6 +352,58 @@ router.post('/:id/unplan', async (req, res) => {
     const task = await prisma.task.update({
       where: { id: req.params['id'] },
       data: { plannedFor: null, reminderSentAt: null },
+      include: taskInclude,
+    });
+    res.json(serialize(task));
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Étoiles du jour (v3-03) : on ne choisit pas 30 visions, on en choisit 3.
+export const MAX_STARS_PER_DAY = 3;
+
+router.post('/:id/star', async (req, res) => {
+  try {
+    const existing = await prisma.task.findUnique({ where: { id: req.params['id'] } });
+    if (!existing || existing.userId !== req.userId) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    const dateKey = await userTodayKey(req.userId);
+    if (existing.starredOn !== dateKey) {
+      const starred = await prisma.task.count({ where: { userId: req.userId, starredOn: dateKey } });
+      if (starred >= MAX_STARS_PER_DAY) {
+        res.status(400).json({
+          error: 'Trois Étoiles suffisent pour un jour — retires-en une avant d\'en choisir une autre.',
+        });
+        return;
+      }
+    }
+
+    const task = await prisma.task.update({
+      where: { id: existing.id },
+      data: { starredOn: dateKey },
+      include: taskInclude,
+    });
+    res.json(serialize(task));
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/:id/unstar', async (req, res) => {
+  try {
+    const existing = await prisma.task.findUnique({ where: { id: req.params['id'] } });
+    if (!existing || existing.userId !== req.userId) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    const task = await prisma.task.update({
+      where: { id: existing.id },
+      data: { starredOn: null },
       include: taskInclude,
     });
     res.json(serialize(task));
