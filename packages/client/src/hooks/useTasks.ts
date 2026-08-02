@@ -16,6 +16,7 @@ interface UseTasksResult {
   reorderTasks: (quadrant: Quadrant, orderedIds: string[]) => Promise<void>;
   planTask: (id: string, date: string) => Promise<void>;
   unplanTask: (id: string) => Promise<void>;
+  reactivateTask: (id: string) => Promise<void>;
   starTask: (id: string) => Promise<void>;
   unstarTask: (id: string) => Promise<void>;
   addStep: (taskId: string, title: string) => Promise<void>;
@@ -92,6 +93,14 @@ export function useTasks(): UseTasksResult {
       throw err;
     }
   }, [rawTasks]);
+
+  // Annulation (v3-17) : la tâche n'est déjà plus dans `rawTasks` (ce hook ne
+  // suit que les tâches ACTIVE) — rien à retirer en optimistic, juste à
+  // réinsérer une fois le serveur confirmé, quadrant/position d'origine intacts.
+  const reactivateTask = useCallback(async (id: string) => {
+    const task = await api.post<Task>('/tasks/' + id + '/reactivate', {});
+    setRawTasks((t) => [...t, task]);
+  }, []);
 
   const updateTask = useCallback(async (
     id: string,
@@ -258,7 +267,7 @@ export function useTasks(): UseTasksResult {
   return {
     tasks, isLoading, error, refresh: fetchTasks,
     completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask,
-    reorderTasks, planTask, unplanTask,
+    reorderTasks, planTask, unplanTask, reactivateTask,
     starTask, unstarTask,
     addStep, toggleStep, removeStep,
   };

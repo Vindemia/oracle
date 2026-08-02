@@ -36,7 +36,7 @@ function focusTaskInput() {
 }
 
 function FocusRoute() {
-  const { tasks, isLoading, refresh, reorderTasks, planTask, completeTask, toggleStep } = useTasks();
+  const { tasks, isLoading, refresh, reorderTasks, planTask, completeTask, toggleStep, reactivateTask } = useTasks();
   const { tags: allTags } = useTags();
   const { setHasFireTasks } = useFireAlert();
 
@@ -73,6 +73,7 @@ function FocusRoute() {
         onComplete={completeTask}
         onPassFire={handlePassFire}
         onToggleStep={toggleStep}
+        onReactivate={reactivateTask}
       />
     </AppShell>
   );
@@ -84,7 +85,7 @@ function RitualRoute() {
 }
 
 function MatrixRoute() {
-  const { tasks, isLoading, error, refresh, completeTask, eliminateTask, updateTask, updateTaskTags, deleteTask, reorderTasks, unplanTask, planTask, addStep, toggleStep, removeStep } = useTasks();
+  const { tasks, isLoading, error, refresh, completeTask, eliminateTask, reactivateTask, updateTask, updateTaskTags, deleteTask, reorderTasks, unplanTask, planTask, addStep, toggleStep, removeStep } = useTasks();
   const { tags: allTags } = useTags();
   const { setHasFireTasks } = useFireAlert();
 
@@ -100,6 +101,7 @@ function MatrixRoute() {
         allTags={allTags}
         onComplete={completeTask}
         onEliminate={eliminateTask}
+        onReactivate={reactivateTask}
         onUpdate={updateTask}
         onUpdateTags={updateTaskTags}
         onDelete={deleteTask}

@@ -9,15 +9,30 @@ export function ToastList() {
   return (
     <div className={styles.container} role="status" aria-live="polite">
       {toasts.map((toast) => (
-        <button
+        <div
           key={toast.id}
-          type="button"
           className={[styles.toast, styles['variant_' + toast.variant]].join(' ')}
+          role="button"
+          tabIndex={0}
           onClick={() => { dismissToast(toast.id); }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') dismissToast(toast.id); }}
           aria-label="Fermer la notification"
         >
-          {toast.message}
-        </button>
+          <span className={styles.message}>{toast.message}</span>
+          {toast.action && (
+            <button
+              type="button"
+              className={styles.actionBtn}
+              onClick={(e) => {
+                e.stopPropagation();
+                toast.action?.onClick();
+                dismissToast(toast.id);
+              }}
+            >
+              {toast.action.label}
+            </button>
+          )}
+        </div>
       ))}
     </div>
   );
