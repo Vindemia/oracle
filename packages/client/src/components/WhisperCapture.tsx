@@ -9,6 +9,8 @@ interface WhisperCaptureProps {
   open: boolean;
   onClose: () => void;
   capture: (text: string) => Promise<void>;
+  whisperCount: number;
+  onViewTriage: () => void;
 }
 
 /**
@@ -16,7 +18,7 @@ interface WhisperCaptureProps {
  * overlay gardé ouvert pour la capture en rafale), Échap = fermé. Aucun tri
  * ici : classer au moment de noter est la friction qu'on élimine (v3-02).
  */
-export function WhisperCapture({ open, onClose, capture }: WhisperCaptureProps) {
+export function WhisperCapture({ open, onClose, capture, whisperCount, onViewTriage }: WhisperCaptureProps) {
   const { t } = useTheme();
   const { showToast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -82,6 +84,14 @@ export function WhisperCapture({ open, onClose, capture }: WhisperCaptureProps) 
           disabled={isSending}
           aria-label={t('whisperPlaceholder')}
         />
+        {whisperCount > 0 && (
+          // L'icône « murmure » du header ouvre normalement le tri au second clic,
+          // mais cet overlay plein écran (au-dessus du header) rend ce clic
+          // inatteignable tant que la capture est ouverte — lien direct en secours.
+          <button type="button" className={styles.viewTriageBtn} onClick={onViewTriage}>
+            Voir {whisperCount.toString()} {t('quickNote')}{whisperCount > 1 ? 's' : ''} en attente →
+          </button>
+        )}
       </div>
     </div>,
     document.body,

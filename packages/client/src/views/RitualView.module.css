@@ -1,10 +1,14 @@
+/* RitualView n'est pas rendu dans <AppShell> (pas de barre de saisie sur cet
+   écran dédié) — il n'hérite donc pas de son `padding-top: 4rem` qui
+   compense le header fixe. Sans ce padding ici, le titre se retrouve sous
+   le header (constaté à l'onboarding mobile). */
 .ritual {
-  min-height: calc(100vh - 60px);
+  min-height: calc(100dvh - 4rem);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
-  padding: 2rem 1rem 3rem;
+  padding: calc(4rem + 1rem) 1rem 3rem;
 }
 
 .head {

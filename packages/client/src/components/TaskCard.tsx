@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { MouseEvent, TouchEvent } from 'react';
 import type { Tag, Task } from '../types/index.js';
@@ -220,6 +220,27 @@ export function TaskCard({ task, allTags, onComplete, onEliminate, onReactivate,
       document.removeEventListener('mousedown', handler);
       document.removeEventListener('touchstart', handler);
     };
+  }, [tagPopoverOpen]);
+
+  // Le popover s'ouvre toujours vers le bas au clic (position pas encore
+  // connue). Une fois monté, on connaît sa vraie hauteur (variable selon le
+  // nombre de tags) — s'il déborde de l'espace utile, on le bascule au-dessus
+  // du bouton, comme le menu contextuel le fait déjà pour lui-même. L'espace
+  // utile exclut la barre de saisie mobile fixe (--mobile-bar-height, posée
+  // par TaskInput) : sans ça, le popover finit dessous, partiellement
+  // recouvert par elle (z-index 100 vs 200 — la barre reste inatteignable
+  // sous le popover mais l'inverse serait pire).
+  useLayoutEffect(() => {
+    if (!tagPopoverOpen || !tagPopoverRef.current || !tagBtnRef.current) return;
+    const btnRect = tagBtnRef.current.getBoundingClientRect();
+    const popoverHeight = tagPopoverRef.current.getBoundingClientRect().height;
+    const mobileBarHeight = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--mobile-bar-height'),
+    ) || 0;
+    const spaceBelow = window.innerHeight - mobileBarHeight - btnRect.bottom;
+    if (spaceBelow < popoverHeight + 8) {
+      setPopoverPos((pos) => ({ ...pos, top: Math.max(4, btnRect.top - popoverHeight - 4) }));
+    }
   }, [tagPopoverOpen]);
 
   useEffect(() => {
