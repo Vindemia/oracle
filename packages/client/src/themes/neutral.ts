@@ -102,5 +102,7 @@ export const neutralTheme: Theme = {
     dailyStar: 'priorité du jour',
     dailyStarPlural: 'priorités du jour',
     oracleWord: 'Ton intention',
+
+    constellationEliminatedSuffix: 'supprimée',
   },
 };

@@ -2,6 +2,13 @@ import type { ToastVariant } from '../context/ToastContext.js';
 import type { Quadrant } from '../types/index.js';
 
 /**
+ * Renforcement immédiat (v3-05) : événement transverse unique dispatché par
+ * useTasks() à chaque complétion, écouté par le Header pour animer l'icône
+ * Constellation — un seul point de câblage plutôt qu'un écouteur par écran.
+ */
+export const STAR_PULSE_EVENT = 'oracle:star-pulse';
+
+/**
  * Retourne le message de toast et la variante selon l'action + le quadrant.
  */
 export function getCompleteToast(

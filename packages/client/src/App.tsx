@@ -18,6 +18,7 @@ import { SettingsPage } from './pages/SettingsPage.js';
 import { HistoryView } from './views/HistoryView.js';
 import { FocusView } from './views/FocusView.js';
 import { RitualView } from './views/RitualView.js';
+import { ConstellationView } from './views/ConstellationView.js';
 import { useTasks } from './hooks/useTasks.js';
 import { useTags } from './hooks/useTags.js';
 
@@ -139,6 +140,7 @@ export default function App() {
                 <Route path="/" element={<MatrixRoute />} />
                 <Route path="/focus" element={<FocusRoute />} />
                 <Route path="/ritual" element={<RitualRoute />} />
+                <Route path="/constellation" element={<ConstellationView />} />
                 <Route path="/history" element={<HistoryView />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>

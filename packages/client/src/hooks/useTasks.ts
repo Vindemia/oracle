@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client.js';
 import type { Quadrant, Tag, Task } from '../types/index.js';
 import { todayKey } from '../utils/dates.js';
+import { STAR_PULSE_EVENT } from '../utils/animations.js';
+import { rollRevelation } from '../utils/revelations.js';
+import { useToast } from '../context/ToastContext.js';
 
 interface UseTasksResult {
   tasks: Task[];
@@ -28,6 +31,7 @@ export function useTasks(): UseTasksResult {
   const [rawTasks, setRawTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const tasks = useMemo(() => {
     return [...rawTasks].sort((a, b) => {
@@ -72,16 +76,24 @@ export function useTasks(): UseTasksResult {
     return () => { clearTimeout(timer); };
   }, [rawTasks, fetchTasks]);
 
+  // Renforcement immédiat (v3-05) : point de câblage unique et centralisé —
+  // toute complétion (Matrix, Focus…) passe par ici, donc un seul endroit
+  // écoute/déclenche l'animation d'étoile et le tirage de révélation rare.
   const completeTask = useCallback(async (id: string) => {
     const prev = rawTasks;
     setRawTasks((t) => t.filter((task) => task.id !== id));
     try {
       await api.post<Task>('/tasks/' + id + '/complete', {});
+      window.dispatchEvent(new Event(STAR_PULSE_EVENT));
+      const revelation = rollRevelation();
+      if (revelation !== null) {
+        showToast(`✦ Révélation — ${revelation}`, 'special', { durationMs: 5000 });
+      }
     } catch (err) {
       setRawTasks(prev);
       throw err;
     }
-  }, [rawTasks]);
+  }, [rawTasks, showToast]);
 
   const eliminateTask = useCallback(async (id: string) => {
     const prev = rawTasks;
