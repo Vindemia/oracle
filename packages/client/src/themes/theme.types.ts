@@ -51,7 +51,9 @@ export type TermKey =
   // Rituel de l'Aube (v3-03) — check-in quotidien
   | 'dailyStar'
   | 'dailyStarPlural'
-  | 'oracleWord';
+  | 'oracleWord'
+  // Constellation (v3-05) — jours actifs & révélations
+  | 'constellationEliminatedSuffix';
 
 export interface Theme {
   /** Identifiant stable — persisté côté serveur (`User.themeId`) et en localStorage. */

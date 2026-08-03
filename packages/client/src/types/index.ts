@@ -59,6 +59,23 @@ export interface RitualStatus {
   suggestions: Task[];
 }
 
+/** Une étoile du ciel du mois (v3-05) — vision accomplie, position dérivée côté client. */
+export interface ConstellationStar {
+  id: string;
+  title: string;
+  completedAt: string;
+  quadrant: Quadrant;
+}
+
+/** Agrégat du mois local pour la Constellation (v3-05) — tout est dérivé, aucun nouveau modèle. */
+export interface ConstellationData {
+  /** Total à vie de jours actifs — ne diminue jamais. */
+  activeDaysTotal: number;
+  activeDaysThisMonth: string[];
+  completedThisMonth: ConstellationStar[];
+  eliminatedThisMonthCount: number;
+}
+
 export interface Whisper {
   id: string;
   text: string;

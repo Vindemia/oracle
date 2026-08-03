@@ -1,4 +1,4 @@
-import { ScrollIcon, GearIcon, SignOutIcon, QuestionIcon, FeatherIcon, WindIcon, SunHorizonIcon } from '@phosphor-icons/react';
+import { ScrollIcon, GearIcon, SignOutIcon, QuestionIcon, FeatherIcon, WindIcon, SunHorizonIcon, SparkleIcon } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -10,6 +10,8 @@ import { HelpDrawer } from './HelpDrawer.js';
 import { FeedbackOverlay } from './FeedbackOverlay.js';
 import { WhisperCapture } from './WhisperCapture.js';
 import { WhisperTriage } from './WhisperTriage.js';
+import { StarParticles } from './StarParticles.js';
+import { STAR_PULSE_EVENT } from '../utils/animations.js';
 import styles from './Header.module.css';
 
 const WHISPER_LONG_PRESS_MS = 500;
@@ -34,8 +36,17 @@ export function Header() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [whisperCaptureOpen, setWhisperCaptureOpen] = useState(false);
   const [whisperTriageOpen, setWhisperTriageOpen] = useState(false);
+  const [starPulse, setStarPulse] = useState(false);
   const longPressTimer = useRef<number | null>(null);
   const longPressTriggered = useRef(false);
+
+  // Renforcement immédiat (v3-05) : signal transverse unique — dispatché par
+  // useTasks() à chaque complétion, écouté ici plutôt que dans chaque écran.
+  useEffect(() => {
+    const handler = () => { setStarPulse(true); };
+    window.addEventListener(STAR_PULSE_EVENT, handler);
+    return () => { window.removeEventListener(STAR_PULSE_EVENT, handler); };
+  }, []);
 
   const isFocus = location.pathname === '/focus';
 
@@ -135,6 +146,17 @@ export function Header() {
                 <span className={styles.dot} aria-hidden="true" />
               </button>
             )}
+            <span className={styles.constellationAnchor}>
+              <button
+                className={[styles.iconBtn, location.pathname === '/constellation' ? styles.active : null].filter(Boolean).join(' ')}
+                onClick={() => { toggle('/constellation'); }}
+                aria-label={t('progress')}
+                title={t('progress')}
+              >
+                <SparkleIcon size={20} weight={location.pathname === '/constellation' ? 'duotone' : 'regular'} />
+              </button>
+              <StarParticles active={starPulse} onDone={() => { setStarPulse(false); }} />
+            </span>
             <button
               className={[styles.iconBtn, location.pathname === '/history' ? styles.active : null].filter(Boolean).join(' ')}
               onClick={() => { toggle('/history'); }}
