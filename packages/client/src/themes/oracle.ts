@@ -100,5 +100,7 @@ export const oracleTheme: Theme = {
     dailyStar: 'Étoile du jour',
     dailyStarPlural: 'Étoiles du jour',
     oracleWord: "Le mot de l'Oracle",
+
+    constellationEliminatedSuffix: 'rendue à la brume',
   },
 };

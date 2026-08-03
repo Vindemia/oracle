@@ -143,6 +143,13 @@
   gap: 0.25rem;
 }
 
+/* Ancre du renforcement immédiat (v3-05) : StarParticles se positionne en
+   `inset: 0` sur ce span plutôt que dans le <button> (contenu non-phrasing). */
+.constellationAnchor {
+  position: relative;
+  display: inline-flex;
+}
+
 .iconBtn {
   position: relative;
   background: none;

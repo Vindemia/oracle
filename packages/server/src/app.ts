@@ -9,6 +9,7 @@ import calendarRouter from './calendar/calendar.router.js';
 import feedbackRouter from './feedback/feedback.router.js';
 import whispersRouter from './whispers/whispers.router.js';
 import ritualRouter from './ritual/ritual.router.js';
+import constellationRouter from './constellation/constellation.router.js';
 import { errorMiddleware } from './error.middleware.js';
 
 const app = express();
@@ -29,6 +30,7 @@ app.use('/api/calendar', calendarRouter);
 app.use('/api/feedback', feedbackRouter);
 app.use('/api/whispers', whispersRouter);
 app.use('/api/ritual', ritualRouter);
+app.use('/api/constellation', constellationRouter);
 
 // Global error handler — must be registered after all routes
 app.use(errorMiddleware);
