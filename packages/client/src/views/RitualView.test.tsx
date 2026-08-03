@@ -44,6 +44,7 @@ function mockGet({ whispers = [], suggestions = [] }: { whispers?: unknown[]; su
     if (path === '/ritual/status') {
       return Promise.resolve({
         ritualDoneToday: false,
+        lastRitualOn: null,
         whisperCount: whispers.length,
         starredToday: [],
         suggestions,
@@ -124,5 +125,86 @@ describe('RitualView — Rituel de l\'Aube', () => {
     expect(screen.getByText('D').closest('button')).toBeDisabled();
     // Retirer une Étoile reste possible — c'est ce qui libère une place.
     expect(screen.getByText('A').closest('button')).not.toBeDisabled();
+  });
+});
+
+describe('RitualView — Premier Rituel (v3-15, first=1)', () => {
+  it('démarre par la capture — jamais par le tri, même compte neuf', async () => {
+    mockGet({ whispers: [] });
+
+    renderWithProviders(
+      <RitualView tasks={[]} onStar={vi.fn()} onUnstar={vi.fn()} />,
+      { route: '/ritual?first=1' },
+    );
+
+    expect(await screen.findByRole('textbox')).toBeInTheDocument();
+    expect(screen.getByText('0/3')).toBeInTheDocument();
+    expect(screen.getByText(/Continuer/).closest('button')).toBeDisabled();
+  });
+
+  it('le flux complet capture → révèle → étoile → atterrit sur /focus, rituel enregistré', async () => {
+    mockGet({ whispers: [] });
+    const onStar = vi.fn<(id: string) => Promise<void>>().mockResolvedValue(undefined);
+    let capturedText = '';
+    vi.mocked(api.post).mockImplementation((path: string, body?: unknown) => {
+      if (path === '/whispers') {
+        capturedText = (body as { text: string }).text;
+        return Promise.resolve({ id: 'w1', text: capturedText, createdAt: '2026-01-01T00:00:00.000Z' });
+      }
+      if (path === '/whispers/w1/reveal') {
+        return Promise.resolve(makeTask({ id: 'task-first', title: capturedText }));
+      }
+      return Promise.resolve({});
+    });
+
+    renderWithProviders(
+      <RitualView tasks={[]} onStar={onStar} onUnstar={vi.fn()} />,
+      { route: '/ritual?first=1' },
+    );
+
+    const input = await screen.findByRole('textbox');
+    fireEvent.change(input, { target: { value: 'Appeler le vétérinaire' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(await screen.findByText('1/3')).toBeInTheDocument();
+    fireEvent.click(screen.getByText(/Continuer/));
+
+    expect(await screen.findByText('Appeler le vétérinaire')).toBeInTheDocument();
+    // Le libellé du bouton varie selon le thème (« Révéler » / « Ajouter ») — le ✦ ne varie pas.
+    fireEvent.click(screen.getByRole('button', { name: /✦/ }));
+
+    await waitFor(() => { expect(onStar).toHaveBeenCalledWith('task-first'); });
+    expect(await screen.findByText('C\'est ta priorité. Une seule suffit pour commencer.')).toBeInTheDocument();
+    fireEvent.click(screen.getByText(/Continuer/));
+
+    fireEvent.click(await screen.findByText(/Commencer la journée/));
+
+    await waitFor(() => { expect(api.post).toHaveBeenCalledWith('/ritual/complete', {}); });
+    await waitFor(() => { expect(navigate).toHaveBeenCalledWith('/focus'); });
+  });
+
+  it('« Passer » depuis l\'écran de capture ramène directement à la matrice', async () => {
+    mockGet({ whispers: [] });
+
+    renderWithProviders(
+      <RitualView tasks={[]} onStar={vi.fn()} onUnstar={vi.fn()} />,
+      { route: '/ritual?first=1' },
+    );
+
+    fireEvent.click(await screen.findByText('Passer'));
+
+    expect(navigate).toHaveBeenCalledWith('/');
+  });
+
+  it('aucune requête de permission notifications pendant le Premier Rituel', async () => {
+    mockGet({ whispers: [] });
+
+    renderWithProviders(
+      <RitualView tasks={[]} onStar={vi.fn()} onUnstar={vi.fn()} />,
+      { route: '/ritual?first=1' },
+    );
+
+    await screen.findByRole('textbox');
+    expect(screen.queryByText(/notification/i)).not.toBeInTheDocument();
   });
 });

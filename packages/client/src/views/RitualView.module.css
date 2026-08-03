@@ -54,6 +54,27 @@
   color: var(--accent-gold);
 }
 
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  transition: border-color 150ms ease-out;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent-purple);
+}
+
+.input:disabled {
+  opacity: 0.6;
+}
+
 .whisper {
   width: 100%;
   background: var(--bg-surface);

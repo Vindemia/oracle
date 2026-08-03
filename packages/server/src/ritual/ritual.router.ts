@@ -55,6 +55,9 @@ router.get('/status', async (req, res) => {
 
     res.json({
       ritualDoneToday: user.lastRitualOn === dateKey,
+      // Distingue « jamais fait de rituel » (null) de « fait un autre jour » —
+      // consommé par le client pour détecter un tout premier lancement (v3-15).
+      lastRitualOn: user.lastRitualOn,
       whisperCount,
       starredToday: candidates.filter((t) => t.starredOn === dateKey).map(serialize),
       suggestions: rankSuggestions(candidates, user.timezone, dateKey).map(serialize),

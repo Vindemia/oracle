@@ -52,6 +52,8 @@ export interface Task {
 /** État du Rituel de l'Aube pour la journée en cours (v3-03). */
 export interface RitualStatus {
   ritualDoneToday: boolean;
+  /** dateKey locale du dernier rituel accompli, ou `null` si jamais fait (v3-15). */
+  lastRitualOn: string | null;
   whisperCount: number;
   starredToday: Task[];
   suggestions: Task[];

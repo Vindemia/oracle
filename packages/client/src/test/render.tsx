@@ -8,19 +8,22 @@ import { ThemeProvider } from '../context/ThemeContext.js';
 // (cf. commentaire dans ThemeContext.tsx) — pas besoin de mocker l'auth ici.
 // Si un composant a besoin d'AuthContext ou de ToastContext, compose-les autour
 // de <AllProviders> dans le test concerné plutôt que d'alourdir ce helper.
-function AllProviders({ children }: { children: ReactNode }) {
-  return (
-    <MemoryRouter>
-      <ThemeProvider>{children}</ThemeProvider>
-    </MemoryRouter>
-  );
+function makeAllProviders(route: string | undefined) {
+  return function AllProviders({ children }: { children: ReactNode }) {
+    return (
+      <MemoryRouter {...(route !== undefined ? { initialEntries: [route] } : {})}>
+        <ThemeProvider>{children}</ThemeProvider>
+      </MemoryRouter>
+    );
+  };
 }
 
 export function renderWithProviders(
   ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>,
+  options?: Omit<RenderOptions, 'wrapper'> & { route?: string },
 ) {
-  return render(ui, { wrapper: AllProviders, ...options });
+  const { route, ...renderOptions } = options ?? {};
+  return render(ui, { wrapper: makeAllProviders(route), ...renderOptions });
 }
 
 export * from '@testing-library/react';
