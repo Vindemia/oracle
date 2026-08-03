@@ -216,7 +216,13 @@ export function Header() {
       </header>
       <HelpDrawer open={helpOpen} onClose={() => { setHelpOpen(false); }} />
       <FeedbackOverlay open={feedbackOpen} onClose={() => { setFeedbackOpen(false); }} />
-      <WhisperCapture open={whisperCaptureOpen} onClose={() => { setWhisperCaptureOpen(false); }} capture={capture} />
+      <WhisperCapture
+        open={whisperCaptureOpen}
+        onClose={() => { setWhisperCaptureOpen(false); }}
+        capture={capture}
+        whisperCount={whispers.length}
+        onViewTriage={openTriage}
+      />
       <WhisperTriage
         open={whisperTriageOpen}
         onClose={() => { setWhisperTriageOpen(false); }}
