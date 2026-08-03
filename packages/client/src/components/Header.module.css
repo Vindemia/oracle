@@ -26,6 +26,7 @@
 .left {
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .titleBtn {
@@ -38,6 +39,7 @@
   font-weight: 600;
   color: var(--accent-gold-light);
   letter-spacing: 0.05em;
+  white-space: nowrap;
   transition: opacity 150ms ease-out;
 }
 
@@ -135,12 +137,52 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  min-width: 0;
 }
 
 .actions {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+/* Mobile (<768px) : les 8 icônes ne tiennent jamais dans la largeur
+   restante (colonne 1fr). Sans ça, `.actions` déborde silencieusement
+   du viewport (coupé par overflow-x:hidden sur <body>) et jusqu'à la
+   moitié des boutons devient injoignable au toucher. On réduit ce
+   qu'on peut (libellé Focus, paddings) et on rend le reste défilable
+   horizontalement plutôt que de le perdre hors écran. */
+@media (max-width: 767px) {
+  .header {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .titleBtn {
+    font-size: 1.125rem;
+  }
+
+  .focusBtn {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .focusBtnLabel {
+    display: none;
+  }
+
+  .actions {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .iconBtn {
+    flex-shrink: 0;
+  }
 }
 
 /* Ancre du renforcement immédiat (v3-05) : StarParticles se positionne en
