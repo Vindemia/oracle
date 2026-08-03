@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.js';
 import { ThemeProvider } from './context/ThemeContext.js';
 import { ToastProvider } from './context/ToastContext.js';
@@ -21,6 +21,7 @@ import { RitualView } from './views/RitualView.js';
 import { ConstellationView } from './views/ConstellationView.js';
 import { useTasks } from './hooks/useTasks.js';
 import { useTags } from './hooks/useTags.js';
+import { useRitual } from './hooks/useRitual.js';
 
 function AppLayout() {
   return (
@@ -34,6 +35,27 @@ function AppLayout() {
 
 function focusTaskInput() {
   document.querySelector<HTMLInputElement>('[data-task-input]')?.focus();
+}
+
+// Premier Rituel (v3-15) : détecté au premier rendu authentifié, une seule
+// fois par session — sans ce garde-fou, « Passer » sans rien créer ramène
+// sur la Matrice avec un état toujours vide et redéclenche la redirection.
+const ONBOARDING_CHECKED_KEY = 'oracle:onboardingChecked';
+
+function alreadyCheckedOnboarding(): boolean {
+  try {
+    return window.sessionStorage.getItem(ONBOARDING_CHECKED_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function markOnboardingChecked(): void {
+  try {
+    window.sessionStorage.setItem(ONBOARDING_CHECKED_KEY, '1');
+  } catch {
+    // best-effort — l'absence de garde-fou ne doit jamais bloquer l'app
+  }
 }
 
 function FocusRoute() {
@@ -89,10 +111,24 @@ function MatrixRoute() {
   const { tasks, isLoading, error, refresh, completeTask, eliminateTask, reactivateTask, updateTask, updateTaskTags, deleteTask, reorderTasks, unplanTask, planTask, addStep, toggleStep, removeStep } = useTasks();
   const { tags: allTags } = useTags();
   const { setHasFireTasks } = useFireAlert();
+  const { status: ritualStatus, isLoading: ritualLoading } = useRitual();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setHasFireTasks(tasks.some((t) => t.quadrant === 'FIRE' && t.status === 'ACTIVE'));
   }, [tasks, setHasFireTasks]);
+
+  // Premier Rituel (v3-15) : compte tout neuf (0 vision, 0 murmure, jamais de
+  // rituel) → onboarding guidé. Aucun flag en base, l'état se déduit.
+  useEffect(() => {
+    if (isLoading || ritualLoading || ritualStatus === null) return;
+    if (alreadyCheckedOnboarding()) return;
+    markOnboardingChecked();
+    if (tasks.length === 0 && ritualStatus.whisperCount === 0 && ritualStatus.lastRitualOn === null) {
+      void navigate('/ritual?first=1');
+    }
+  }, [isLoading, ritualLoading, ritualStatus, tasks.length, navigate]);
+
   return (
     <AppShell onTaskCreated={refresh}>
       <MatrixView

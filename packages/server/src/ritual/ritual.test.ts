@@ -139,6 +139,23 @@ describe('GET /api/ritual/status', () => {
     expect(res.body.whisperCount).toBe(3);
   });
 
+  it('remonte lastRitualOn tel quel (null si jamais fait) — utilisé par le client pour détecter le premier lancement', async () => {
+    const res = await request(app).get('/api/ritual/status').set('Authorization', `Bearer ${token}`);
+
+    expect(res.body.lastRitualOn).toBeNull();
+  });
+
+  it('remonte lastRitualOn même si le dernier rituel date d\'un autre jour', async () => {
+    vi.mocked(prismaMock.user.findUnique).mockResolvedValue({
+      timezone: TIMEZONE,
+      lastRitualOn: '2020-01-01',
+    } as never);
+
+    const res = await request(app).get('/api/ritual/status').set('Authorization', `Bearer ${token}`);
+
+    expect(res.body.lastRitualOn).toBe('2020-01-01');
+  });
+
   it('401 sans token', async () => {
     const res = await request(app).get('/api/ritual/status');
     expect(res.status).toBe(401);
