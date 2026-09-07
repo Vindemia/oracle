@@ -98,6 +98,11 @@ jobs:
       # Heredoc quoté ('ENVEOF') : les secrets sont interpolés par GitHub
       # Actions AVANT l'envoi du script sur le serveur — le heredoc quoté
       # empêche toute réinterprétation shell de leur contenu (ex: `$`, `` ` ``).
+      # ponytail: TAG/DOCKER_REGISTRY doivent aussi être persistés ici — sinon
+      # un `docker compose up` lancé hors de ce job (reboot, manip manuelle)
+      # retombe sur le .env existant et peut faire régresser la prod vers une
+      # ancienne image en silence (constaté le 2026-07-16, prod restée en
+      # v1.2.0 malgré des déploiements v1.3.0/v1.3.1 réussis en CI).
       - name: Écrire le .env sur le serveur
         uses: appleboy/ssh-action@v1
         with:
@@ -111,6 +116,8 @@ jobs:
             set -e
             umask 077
             cat > $HOME/oracle/.env <<'ENVEOF'
+            TAG=${{ github.ref_name }}
+            DOCKER_REGISTRY=ghcr.io/${{ steps.owner.outputs.value }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}

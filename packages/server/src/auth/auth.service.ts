@@ -5,7 +5,14 @@ import type { PrismaClient } from '@prisma/client';
 import { seedUserTags } from '../lib/tags.js';
 import { sendPasswordResetEmail } from '../mail/mail.service.js';
 
-const ACCESS_SECRET = process.env['JWT_ACCESS_SECRET'] ?? 'access-secret-dev';
+// ponytail: un fallback silencieux en prod = secret public — mieux vaut crasher au boot
+const ACCESS_SECRET =
+  process.env['JWT_SECRET'] ??
+  (process.env['NODE_ENV'] === 'production'
+    ? (() => {
+        throw new Error('JWT_SECRET manquant');
+      })()
+    : 'access-secret-dev');
 const REFRESH_SECRET = process.env['JWT_REFRESH_SECRET'] ?? 'refresh-secret-dev';
 const ACCESS_EXPIRES = '15m';
 const REFRESH_EXPIRES = '7d';
